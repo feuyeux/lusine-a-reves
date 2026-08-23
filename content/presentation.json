@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "id": "signals-systems-stories",
+  "title": "Signals / Systems / Stories",
+  "subtitle": "A reusable technical presentation built from one content model",
+  "author": "Lusine a Reves Meta Builder",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "tailFrames": 12,
+  "showCaptions": true,
+  "showPresenter": true,
+  "presenterProfile": {
+    "id": "lina-tech-v1",
+    "displayName": "Lina",
+    "role": "Technical presenter"
+  },
+  "theme": {
+    "ink": "#0a1220",
+    "paper": "#f5f8fc",
+    "muted": "#94a3b8",
+    "accent": "#54d6c5",
+    "accent2": "#7da8ff",
+    "accent3": "#ffbf78",
+    "panel": "#132238"
+  },
+  "slides": [
+    {
+      "id": "opening",
+      "type": "title",
+      "eyebrow": "META BUILDER / TECHNICAL TALK",
+      "title": "把复杂主题\n讲成一段可播放的故事",
+      "subtitle": "一份内容模型，同时驱动演示稿、字幕、旁白和视频。",
+      "body": "示例内容刻意不依赖任何特定仓库或技术领域。替换 JSON，即可生成另一套主题。",
+      "narration": "大家好，今天分享的是 Lusine a Reves Meta Builder。它把一份结构化内容，同时生成演示稿、字幕、旁白和可播放的视频。接下来用一个小型技术分享，说明这套通用工程是怎样工作的。",
+      "captions": [
+        { "text": "大家好，今天分享的是 Lusine a Reves Meta Builder。", "startMs": 0, "endMs": 4200, "timestampMs": null, "confidence": null },
+        { "text": "它把一份结构化内容，同时生成演示稿、字幕、旁白和可播放的视频。", "startMs": 4200, "endMs": 14500, "timestampMs": null, "confidence": null },
+        { "text": "接下来用一个小型技术分享，说明这套通用工程是怎样工作的。", "startMs": 14500, "endMs": 23100, "timestampMs": null, "confidence": null }
+      ],
+      "audio": "audio/opening.wav",
+      "minDurationSec": 7,
+      "presenter": "side"
+    },
+    {
+      "id": "content-model",
+      "type": "overview",
+      "eyebrow": "01 / CONTENT MODEL",
+      "title": "内容与渲染彻底分离",
+      "subtitle": "作者编辑结构化内容，渲染器负责画面、时间轴和输出。",
+      "stats": [
+        { "value": "01", "label": "内容入口", "detail": "presentation.json", "color": "#54d6c5" },
+        { "value": "02", "label": "输出形态", "detail": "PPTX + MP4", "color": "#7da8ff" },
+        { "value": "03", "label": "可替换适配器", "detail": "TTS / assets / theme", "color": "#ffbf78" }
+      ],
+      "callout": "同一份事实，只维护一次；不同输出只改变适配器。",
+      "narration": "第一步是内容模型。作者只需要维护主题、页面类型、标题、要点和视觉语义，渲染器负责把这些事实映射成画面。这样，PPTX 和 MP4 不会因为重复编辑而逐渐分叉。",
+      "audio": "audio/content-model.wav",
+      "minDurationSec": 7,
+      "presenter": "corner"
+    },
+    {
+      "id": "pipeline",
+      "type": "diagram",
+      "eyebrow": "02 / PIPELINE",
+      "title": "从内容到交付物",
+      "subtitle": "每个阶段都有一个可检查的中间产物。",
+      "nodes": [
+        { "label": "CONTENT", "sub": "JSON schema", "color": "#f5f8fc" },
+        { "label": "TIMELINE", "sub": "audio manifest", "color": "#54d6c5" },
+        { "label": "PRESENT", "sub": "Remotion", "color": "#7da8ff" },
+        { "label": "EXPORT", "sub": "PPTX / MP4", "color": "#ffbf78" }
+      ],
+      "narration": "第二步是流水线。内容先经过 schema 校验，再由音频 manifest 提供真实时间轴，最后进入 Remotion 和 PPTX 两个输出适配器。每一步都有可以单独检查的中间结果。",
+      "audio": "audio/pipeline.wav",
+      "minDurationSec": 7,
+      "presenter": "none"
+    },
+    {
+      "id": "timeline",
+      "type": "metrics",
+      "eyebrow": "03 / TIMELINE",
+      "title": "旁白是时间轴的事实来源",
+      "subtitle": "音频存在时，场景长度由真实时长加尾帧计算。",
+      "stats": [
+        { "value": "0", "label": "手填时长", "detail": "不再依赖猜测", "color": "#54d6c5" },
+        { "value": "1", "label": "音频 manifest", "detail": "时长 / 采样率 / hash", "color": "#7da8ff" },
+        { "value": "N", "label": "平台适配器", "detail": "不改变内容模型", "color": "#ffbf78" }
+      ],
+      "callout": "生成旁白、更新 manifest、渲染视频，顺序可自动化。",
+      "narration": "第三步是时间轴。只要旁白存在，页面长度就由音频真实时长加上固定尾帧计算，不再依赖手填秒数。更新台词以后重新生成 manifest，字幕和页面切换就能保持同步。",
+      "audio": "audio/timeline.wav",
+      "minDurationSec": 7,
+      "presenter": "side"
+    },
+    {
+      "id": "presenter",
+      "type": "text",
+      "eyebrow": "04 / PRESENTER",
+      "title": "数字人是渲染适配器",
+      "subtitle": "它不拥有主题知识，只消费统一的 slide 和音频接口。",
+      "body": "默认 presenter 使用原生 SVG 绘制，嘴型与声波由当前音频窗口驱动。未来可以替换为真人素材、Live2D 或第三方数字人服务，而不修改内容模型。",
+      "bullets": [
+        "没有主题专属坐标",
+        "没有硬编码仓库名称",
+        "音频不存在时仍可生成静音预览",
+        "字幕使用结构化 Caption 数据"
+      ],
+      "narration": "数字人只是渲染适配器，不拥有任何主题知识。现在的 Lina 是一个固定版本的人形 presenter，统一使用同一张脸、同一套服装和同一套动画。音频只驱动嘴型与声波，不会让每页的身份、音色或情绪发生漂移。",
+      "audio": "audio/presenter.wav",
+      "minDurationSec": 8,
+      "presenter": "side"
+    },
+    {
+      "id": "outputs",
+      "type": "overview",
+      "eyebrow": "05 / OUTPUTS",
+      "title": "一次建模，多种交付",
+      "subtitle": "演示稿和播放视频共享内容、主题和时间轴。",
+      "stats": [
+        { "value": "PPTX", "label": "编辑与演示", "detail": "适合现场修改", "color": "#54d6c5" },
+        { "value": "MP4", "label": "旁白与播放", "detail": "适合发布与分享", "color": "#7da8ff" },
+        { "value": "JSON", "label": "内容源", "detail": "适合版本控制", "color": "#ffbf78" }
+      ],
+      "narration": "最终可以一次建模，多种交付。PPTX 适合现场编辑和演示，MP4 适合发布和分享，JSON 则是可以审查、版本控制并持续复用的内容源。",
+      "audio": "audio/outputs.wav",
+      "minDurationSec": 7,
+      "presenter": "corner"
+    },
+    {
+      "id": "closing",
+      "type": "closing",
+      "eyebrow": "06 / CLOSE",
+      "title": "主题可以变化，接口不变",
+      "subtitle": "Meta-builder 的交付标准，是让下一套演示稿更容易生成、检查和播放。",
+      "quote": "内容是输入，时间轴是事实，渲染器是适配器。",
+      "narration": "最后总结：内容是输入，时间轴是事实，渲染器是适配器。主题可以变化，接口保持不变。只要准备新的 JSON 和旁白资产，就能生成下一套技术分享视频。谢谢大家。",
+      "audio": "audio/closing.wav",
+      "minDurationSec": 8,
+      "presenter": "side"
+    }
+  ]
+}
