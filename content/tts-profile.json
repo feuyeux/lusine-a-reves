@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "profileId": "technical-neutral-zh-windows-sapi-v1",
+  "provider": "windows-sapi",
+  "runtime": "Microsoft System.Speech / PowerShell",
+  "model": "Microsoft Huihui Desktop",
+  "voice": "Microsoft Huihui Desktop",
+  "language": "Chinese",
+  "languageCode": "zh-CN",
+  "emotion": "neutral",
+  "style": "technical-explainer",
+  "instruct": "语速适中，发音清晰，语气专业自然。",
+  "rate": -1,
+  "volumePercent": 100,
+  "sampleRate": 22050,
+  "channels": 1,
+  "format": "wav",
+  "normalize": false,
+  "randomize": false
+}
