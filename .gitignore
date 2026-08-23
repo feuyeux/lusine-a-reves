@@ -1,0 +1,11 @@
+node_modules/
+.venv/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+build/
+out/
+dist/
+.DS_Store
+.env
+content/audio-manifest.json
