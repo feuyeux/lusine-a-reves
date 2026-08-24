@@ -2,11 +2,9 @@
 
 ## Project Structure
 
-- `src/` contains the Remotion composition, presentation domain types, and fixed `lina-tech-v1` human presenter.
-- `scripts/` contains validation, audio-manifest, PPTX export, and video-render entry points.
-- `content/` stores the reusable presentation JSON and deterministic TTS profile; `public/` stores runtime media and assets.
-- `python/lusine_builder/` is the `uv`-managed Python package for cross-platform orchestration and auditable TTS request planning.
-- `test/` contains Node test files; `python/tests/` contains Python tests. Architecture and TTS decisions live in `docs/`.
+- `core/` contains reusable source, scripts, tests, Python tooling, TTS profiles, and architecture docs.
+- `example/` contains only the `signals-systems-stories` sample content, media, manifest, and preview image.
+- Root files contain the shared npm, TypeScript, Remotion, and uv entry-point configuration.
 - Treat `build/`, `out/`, `.venv/`, and Python caches as generated or local-only data. Do not commit them.
 
 ## Build, Test, and Development Commands
@@ -19,7 +17,7 @@ Use two spaces, semicolons, and existing ESLint/TypeScript conventions in JavaSc
 
 ## Content and TTS Rules
 
-Edit presentation material in `content/presentation.json`. Keep voice, speaker, language, sampling, rate, volume, and emotion instructions centralized in the selected TTS profile; page-level code must not silently change them. The default Windows profile uses fixed System.Speech settings; Qwen3-TTS and Edge profiles are explicit alternatives. Preserve the fixed `lina-tech-v1` presenter design, including facial detail, clothing, mouth animation, and audio visualization. TTS plans must remain deterministic and auditable through their profile and request hashes.
+New presentation material belongs in a caller-owned directory passed with `--presentation`, `--public-dir`, and `--manifest`; do not edit `example/` for new topics. Keep voice, speaker, language, sampling, rate, volume, and emotion instructions centralized in the selected TTS profile. TTS plans must remain deterministic and auditable through their profile and request hashes.
 
 ## Testing Guidelines
 

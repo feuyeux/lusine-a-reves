@@ -6,10 +6,10 @@ export default tseslint.config(
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    ignores: ["node_modules/**", "out/**", "dist/**", "content/audio-manifest.json"],
+    ignores: ["node_modules/**", "out/**", "dist/**", "example/content/audio-manifest.json"],
   },
   {
-    files: ["scripts/**/*.mjs", "test/**/*.mjs"],
+    files: ["core/scripts/**/*.mjs", "core/test/**/*.mjs"],
     languageOptions: { globals: globals.node },
   },
 );

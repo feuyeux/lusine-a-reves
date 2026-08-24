@@ -8,7 +8,7 @@ out/
 dist/
 .DS_Store
 .env
-content/audio-manifest.json
+example/content/audio-manifest.json
 
 # IDE-generated cache (PythonImportHelper completion, etc.)
 .vscode/

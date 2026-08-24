@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "id": "my-topic",
+  "title": "主题名称",
+  "subtitle": "一句话说明这场演讲",
+  "author": "作者名称",
+  "fps": 30,
+  "width": 1920,
+  "height": 1080,
+  "tailFrames": 12,
+  "showCaptions": true,
+  "theme": {
+    "ink": "#1d1d1f",
+    "paper": "#f5f5f7",
+    "muted": "#6e6e73",
+    "accent": "#0071e3",
+    "accent2": "#5e5ce6",
+    "accent3": "#ff9f0a",
+    "panel": "#ffffff"
+  },
+  "slides": [
+    {
+      "id": "opening",
+      "type": "title",
+      "eyebrow": "01 / INTRO",
+      "title": "开场标题",
+      "subtitle": "开场副标题",
+      "body": "用一两句话说明这场演讲解决什么问题。",
+      "narration": "填写开场旁白。这里的文字会用于生成第一段音频。",
+      "audio": "audio/opening.wav",
+      "minDurationSec": 7
+    },
+    {
+      "id": "main-point",
+      "type": "overview",
+      "eyebrow": "02 / MAIN POINT",
+      "title": "核心观点",
+      "subtitle": "用一句话解释这一页的结论。",
+      "stats": [
+        { "value": "01", "label": "第一个事实", "detail": "补充说明", "color": "#0071e3" },
+        { "value": "02", "label": "第二个事实", "detail": "补充说明", "color": "#5e5ce6" },
+        { "value": "03", "label": "第三个事实", "detail": "补充说明", "color": "#ff9f0a" }
+      ],
+      "callout": "填写这一页最重要的一句话。",
+      "narration": "填写核心观点的旁白，解释这三个事实为什么重要。",
+      "audio": "audio/main-point.wav",
+      "minDurationSec": 7
+    },
+    {
+      "id": "closing",
+      "type": "closing",
+      "eyebrow": "03 / CLOSE",
+      "title": "结尾标题",
+      "subtitle": "告诉观众下一步应该做什么。",
+      "quote": "填写最后要让观众记住的一句话。",
+      "narration": "填写结尾旁白，总结主题并给出行动建议。",
+      "audio": "audio/closing.wav",
+      "minDurationSec": 7
+    }
+  ]
+}
