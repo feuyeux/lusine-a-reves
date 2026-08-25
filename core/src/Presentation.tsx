@@ -1,18 +1,30 @@
 import React from "react";
 import { Audio } from "@remotion/media";
 import type { Caption } from "@remotion/captions";
-import { AbsoluteFill, Sequence, spring, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
-import type { Presentation, Slide, Theme } from "./domain";
-import { AudioManifestSchema, parsePresentation } from "./domain";
+import { AbsoluteFill, Img, Sequence, spring, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
+import type { Presentation, Slide, SlideImage, StyleProfile, Theme } from "./domain";
+import { AudioManifestSchema, parsePresentation, resolveSlideTheme } from "./domain";
 import { buildTimeline, type TimelineSlide } from "./timeline";
 import "./styles.css";
 
 type PresentationProps = { presentation: unknown; audioManifest: unknown };
 type SlideFrameProps = { slide: TimelineSlide; index: number; presentation: Presentation };
+type Motion = StyleProfile["motion"];
+type BodyProps = { slide: Slide; theme: Theme; frame: number; fps: number; motion: Motion };
 
-const fadeIn = (frame: number, fps: number, delay = 0, distance = 22) => {
-  const progress = spring({ frame: Math.max(0, frame - delay), fps, config: { damping: 18, stiffness: 110 } });
-  return { opacity: progress, transform: `translateY(${(1 - progress) * distance}px)` };
+// style.motion is a real rendering contract, not a label: each mode maps to a
+// spring configuration and an entry travel distance.
+const MOTION_CONFIGS: Record<Motion, { damping: number; stiffness: number; distance: number }> = {
+  restrained: { damping: 26, stiffness: 70, distance: 10 },
+  measured: { damping: 22, stiffness: 90, distance: 16 },
+  subtle: { damping: 18, stiffness: 110, distance: 22 },
+  energetic: { damping: 12, stiffness: 170, distance: 34 },
+};
+
+const fadeIn = (frame: number, fps: number, motion: Motion, delay = 0, distanceScale = 1) => {
+  const { damping, stiffness, distance } = MOTION_CONFIGS[motion];
+  const progress = spring({ frame: Math.max(0, frame - delay), fps, config: { damping, stiffness } });
+  return { opacity: progress, transform: `translateY(${(1 - progress) * distance * distanceScale}px)` };
 };
 
 const CaptionOverlay: React.FC<{ captions: Caption[]; show: boolean }> = ({ captions, show }) => {
@@ -36,11 +48,12 @@ const SlideHeader: React.FC<{ slide: Slide; index: number; total: number }> = ({
   </header>
 );
 
-const StatGrid: React.FC<{ slide: Slide; theme: Theme; frame: number; fps: number }> = ({ slide, theme, frame, fps }) => (
-  <div className="stat-grid">
+const StatGrid: React.FC<BodyProps> = ({ slide, theme, frame, fps, motion }) => (
+  // --stat-count drives the grid column count so 2 or 4 stats stay balanced.
+  <div className="stat-grid" style={{ "--stat-count": slide.stats.length } as React.CSSProperties}>
     {slide.stats.map((stat, index) => {
       const color = stat.color ?? theme.accent;
-      return <div className="stat-card" key={`${stat.label}-${index}`} style={{ borderTopColor: color, ...fadeIn(frame, fps, 8 + index * 6, 34) }}>
+      return <div className="stat-card" key={`${stat.label}-${index}`} style={{ borderTopColor: color, ...fadeIn(frame, fps, motion, 8 + index * 6, 1.5) }}>
         <div className="stat-value" style={{ color, textShadow: `0 0 34px ${color}40` }}>{stat.value}</div>
         <div className="stat-label">{stat.label}</div>
         {stat.detail && <div className="stat-detail">{stat.detail}</div>}
@@ -61,12 +74,22 @@ const Diagram: React.FC<{ slide: Slide; theme: Theme }> = ({ slide, theme }) => 
   </div>
 );
 
-const SlideBody: React.FC<{ slide: Slide; theme: Theme; frame: number; fps: number }> = ({ slide, theme, frame, fps }) => {
+const ImageFigure: React.FC<{ image: SlideImage }> = ({ image }) => (
+  <figure className="image-figure">
+    <div className="image-frame">
+      <Img src={staticFile(image.src)} alt={image.alt} style={{ objectFit: image.fit }} />
+    </div>
+    {image.caption && <figcaption className="image-caption">{image.caption}</figcaption>}
+  </figure>
+);
+
+const SlideBody: React.FC<BodyProps> = ({ slide, theme, frame, fps, motion }) => {
   switch (slide.type) {
     case "title": return <div className="title-body">{slide.body && <p>{slide.body}</p>}</div>;
     case "overview":
-    case "metrics": return <div className="metric-body"><StatGrid slide={slide} theme={theme} frame={frame} fps={fps} />{slide.callout && <div className="callout">{slide.callout}</div>}</div>;
+    case "metrics": return <div className="metric-body"><StatGrid slide={slide} theme={theme} frame={frame} fps={fps} motion={motion} />{slide.callout && <div className="callout">{slide.callout}</div>}</div>;
     case "diagram": return <div className="diagram-body"><Diagram slide={slide} theme={theme} />{slide.callout && <div className="callout">{slide.callout}</div>}</div>;
+    case "image": return <div className="image-body">{slide.image && <ImageFigure image={slide.image} />}{slide.callout && <div className="callout">{slide.callout}</div>}</div>;
     case "quote": return <blockquote className="quote">{slide.quote ?? slide.body}</blockquote>;
     case "closing": return <div className="closing-body"><div className="closing-quote">{slide.quote}</div></div>;
     default: return <div className="text-body"><div>{slide.body && <p>{slide.body}</p>}</div><ul>{slide.bullets.map((bullet) => <li key={bullet}>{bullet}</li>)}</ul></div>;
@@ -75,15 +98,26 @@ const SlideBody: React.FC<{ slide: Slide; theme: Theme; frame: number; fps: numb
 
 export const SlideFrame: React.FC<SlideFrameProps> = ({ slide, index, presentation }) => {
   const frame = useCurrentFrame();
-  const { fps, theme } = presentation;
+  const { fps, style } = presentation;
+  // Per-slide overrides win over the deck palette, so a chapter can reskin
+  // itself without forking the presentation theme.
+  const theme = resolveSlideTheme(slide, presentation.theme);
+  const cssVars = {
+    "--ink": theme.ink, "--paper": theme.paper, "--muted": theme.muted,
+    "--accent": theme.accent, "--accent2": theme.accent2, "--accent3": theme.accent3,
+    "--panel": theme.panel, "--radius": `${style.cornerRadius}px`,
+    "--heading-font": style.headingFont, "--body-font": style.bodyFont,
+  } as React.CSSProperties;
   return (
-    <AbsoluteFill className="slide" style={{ background: theme.paper, color: theme.ink }}>
-      <div className="grid" />
+    // data-mood exposes the semantic mood label as a CSS hook for downstream
+    // theming without baking any specific mood into the renderer.
+    <AbsoluteFill className={`slide density-${style.density}`} data-mood={style.mood} style={{ ...cssVars, background: theme.paper, color: theme.ink }}>
+      {style.backgroundPattern !== "none" && <div className={`pattern pattern-${style.backgroundPattern}`} />}
       <div className="accent-wash" style={{ background: theme.accent }} />
       <div className="slide-safe">
         <SlideHeader slide={slide} index={index} total={presentation.slides.length} />
-        <main className={`slide-main layout-${slide.type}`} style={fadeIn(frame, fps, 5)}>
-          <SlideBody slide={slide} theme={theme} frame={frame} fps={fps} />
+        <main className={`slide-main layout-${slide.type}`} style={fadeIn(frame, fps, style.motion, 5)}>
+          <SlideBody slide={slide} theme={theme} frame={frame} fps={fps} motion={style.motion} />
         </main>
         <CaptionOverlay captions={slide.captions} show={presentation.showCaptions} />
         <footer className="slide-footer">

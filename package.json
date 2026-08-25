@@ -5,7 +5,7 @@
   "description": "A generic presentation-to-PPTX and narrated Remotion video builder",
   "type": "module",
   "scripts": {
-    "dev": "remotion studio core/src/index.ts",
+    "dev": "node core/scripts/studio.mjs",
     "check": "node core/scripts/validate-deck.mjs",
     "manifest": "node core/scripts/build-audio-manifest.mjs",
     "voiceover": "node core/scripts/generate-voiceover.mjs",

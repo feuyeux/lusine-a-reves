@@ -33,6 +33,20 @@ export function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
 }
 
+export function assertConfirmedBrief(briefPath) {
+  const resolvedPath = resolveFromRoot(briefPath, "");
+  let brief;
+  try {
+    brief = readJson(resolvedPath);
+  } catch (error) {
+    throw new Error(`Unable to read topic brief: ${resolvedPath} (${error.message})`);
+  }
+  if (brief?.schemaVersion !== 1 || brief?.kind !== "topic-intent" || brief?.status !== "confirmed") {
+    throw new Error(`Topic brief must be confirmed before building: ${resolvedPath}`);
+  }
+  return brief;
+}
+
 export function loadDeckFiles(args) {
   const presentationPath = resolveFromRoot(args.presentation, "example/content/presentation.json");
   const manifestPath = resolveFromRoot(args.manifest, "example/content/audio-manifest.json");
@@ -41,20 +55,35 @@ export function loadDeckFiles(args) {
   return { presentation, manifest, presentationPath, manifestPath };
 }
 
-export function assertSafeAudioPath(audioPath) {
-  if (typeof audioPath !== "string" || !audioPath || path.isAbsolute(audioPath) || audioPath.includes("..")) {
-    throw new Error(`Audio path must stay under public/: ${audioPath}`);
+/**
+ * Assets referenced by a deck must resolve inside the caller's public/ dir.
+ * Rejects absolute paths and any `..` traversal segment.
+ */
+export function assertSafePublicPath(assetPath) {
+  if (
+    typeof assetPath !== "string"
+    || !assetPath
+    || path.isAbsolute(assetPath)
+    || assetPath.split(/[/\\]/).includes("..")
+  ) {
+    throw new Error(`Asset path must stay under public/: ${assetPath}`);
   }
-  return audioPath;
+  return assetPath;
 }
+
+/** Backwards-compatible alias used by the audio pipeline. */
+export const assertSafeAudioPath = assertSafePublicPath;
 
 export function getPublicDir(args = {}) {
   return resolveFromRoot(args["public-dir"] ?? args.publicDir, "example/public");
 }
 
-export function getAudioAssetPath(audioPath, args = {}) {
-  return path.join(getPublicDir(args), assertSafeAudioPath(audioPath));
+export function getPublicAssetPath(assetPath, args = {}) {
+  return path.join(getPublicDir(args), assertSafePublicPath(assetPath));
 }
+
+/** Backwards-compatible alias used by the audio pipeline. */
+export const getAudioAssetPath = getPublicAssetPath;
 
 export function getOutputDir(args) {
   return resolveFromRoot(args["output-dir"] ?? args.outputDir, "out");

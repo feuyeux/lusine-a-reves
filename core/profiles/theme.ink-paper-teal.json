@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "paletteId": "ink-paper-teal",
+  "description": "研究编辑感：冷调背景、青蓝强调色，适合含时间线与表格的资料",
+  "theme": {
+    "ink": "#1b2327",
+    "paper": "#eef2f3",
+    "muted": "#66757c",
+    "accent": "#0f7c88",
+    "accent2": "#3a6b8a",
+    "accent3": "#c2703d",
+    "panel": "#ffffff"
+  },
+  "style": {
+    "mood": "research-editorial",
+    "density": "information",
+    "motion": "measured",
+    "cornerRadius": 10,
+    "backgroundPattern": "grid"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "paletteId": "neutral-accent",
+  "description": "中性解释感：默认浅色底与蓝色强调色，适合通用说明类内容",
+  "theme": {
+    "ink": "#1d1d1f",
+    "paper": "#f5f5f7",
+    "muted": "#6e6e73",
+    "accent": "#0071e3",
+    "accent2": "#5e5ce6",
+    "accent3": "#ff9f0a",
+    "panel": "#ffffff"
+  },
+  "style": {
+    "mood": "clear-explanatory",
+    "density": "balanced",
+    "motion": "subtle",
+    "cornerRadius": 16,
+    "backgroundPattern": "grid"
+  }
+}

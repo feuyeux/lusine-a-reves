@@ -18,11 +18,20 @@
     "accent3": "#ff9f0a",
     "panel": "#ffffff"
   },
+  "style": {
+    "mood": "clear-explanatory",
+    "density": "balanced",
+    "motion": "subtle",
+    "headingFont": "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif",
+    "bodyFont": "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif",
+    "cornerRadius": 16,
+    "backgroundPattern": "grid"
+  },
   "slides": [
     {
       "id": "opening",
       "type": "title",
-      "eyebrow": "01 / INTRO",
+      "eyebrow": "INTRO",
       "title": "开场标题",
       "subtitle": "开场副标题",
       "body": "用一两句话说明这场演讲解决什么问题。",
@@ -33,13 +42,28 @@
     {
       "id": "main-point",
       "type": "overview",
-      "eyebrow": "02 / MAIN POINT",
+      "eyebrow": "MAIN POINT",
       "title": "核心观点",
       "subtitle": "用一句话解释这一页的结论。",
       "stats": [
-        { "value": "01", "label": "第一个事实", "detail": "补充说明", "color": "#0071e3" },
-        { "value": "02", "label": "第二个事实", "detail": "补充说明", "color": "#5e5ce6" },
-        { "value": "03", "label": "第三个事实", "detail": "补充说明", "color": "#ff9f0a" }
+        {
+          "value": "01",
+          "label": "第一个事实",
+          "detail": "补充说明",
+          "color": "#0071e3"
+        },
+        {
+          "value": "02",
+          "label": "第二个事实",
+          "detail": "补充说明",
+          "color": "#5e5ce6"
+        },
+        {
+          "value": "03",
+          "label": "第三个事实",
+          "detail": "补充说明",
+          "color": "#ff9f0a"
+        }
       ],
       "callout": "填写这一页最重要的一句话。",
       "narration": "填写核心观点的旁白，解释这三个事实为什么重要。",
@@ -47,9 +71,25 @@
       "minDurationSec": 7
     },
     {
+      "id": "visual",
+      "type": "image",
+      "eyebrow": "VISUAL",
+      "title": "配图页标题",
+      "subtitle": "说明这张图要证明什么。",
+      "image": {
+        "src": "images/example.png",
+        "alt": "图片的无障碍描述，必填",
+        "caption": "图注：数据来源或拍摄说明",
+        "fit": "contain"
+      },
+      "narration": "填写这一页的旁白，解释图片说明了什么。",
+      "audio": "audio/visual.wav",
+      "minDurationSec": 7
+    },
+    {
       "id": "closing",
       "type": "closing",
-      "eyebrow": "03 / CLOSE",
+      "eyebrow": "CLOSE",
       "title": "结尾标题",
       "subtitle": "告诉观众下一步应该做什么。",
       "quote": "填写最后要让观众记住的一句话。",

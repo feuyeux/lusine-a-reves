@@ -29,7 +29,16 @@ npm run check
 npm run dev
 ```
 
-Remotion Studio 打开后选择 `Presentation`。示例输入在：
+Remotion Studio 打开后选择 `Presentation`。`npm run dev` 默认加载示例；预览自己的主题时加参数即可，不必先渲染 MP4：
+
+```powershell
+npm run dev -- `
+  --presentation work/my-topic/presentation.json `
+  --manifest work/my-topic/audio-manifest.json `
+  --public-dir work/my-topic/public
+```
+
+示例输入在：
 
 ```text
 example/content/presentation.json
@@ -54,6 +63,46 @@ out/signals-systems-stories.mp4
 `out/` 是被 Git 忽略的本地生成目录。当前完整验证视频位于 `out/migration-check/signals-systems-stories.mp4`。
 
 ## 3. 制作新主题
+
+新主题必须先完成意图确认，再开始撰写 `presentation.json`。工程不能从一个含糊的主题名可靠推断人物名单、受众、叙事角度或事实边界；确认 brief 是内容生成的前置条件。
+
+先运行交互式 intake：
+
+```powershell
+uv run lusine-meta intake --brief work/my-topic/topic-brief.json
+```
+
+命令会询问 12 项**必答**信息（主题、目标、受众、范围、实体名单、叙事角度、语气、语言、页数、时长、交付物、约束）和 4 项**可选**信息（视觉方向、旁白音色/情绪/语速，可留空跳过），最后展示完整摘要。只有输入 `yes` 才会写入 `status: "confirmed"`。必答项不完整或用户否定确认时保留为 `draft`，不能进入内容撰写阶段。已确认的 brief 默认不会被静默修改，需显式使用 `--revise`。只问必答项可加 `--minimal`。
+
+旁白音色、情绪、语速**只作意图记录**，不改变任何合成参数——实际声音由 `--profile` 选择的 TTS profile 固定决定。
+
+可以把资料文件直接纳入确认过程。工程会读取 Markdown/UTF-8 文本，记录路径、SHA-256、标题、结构信号，并给出可人工调整的视觉建议：
+
+```powershell
+uv run lusine-meta ingest --source "C:\资料\主题全记录.md" --output work/my-topic/material-analysis.json
+uv run lusine-meta intake --source "C:\资料\主题全记录.md" --brief work/my-topic/topic-brief.json
+```
+
+资料分析结果不是额外的装饰层：intake 会把它转成 brief 中可编辑的设计方向，用户确认后再把最终决定写入 `presentation.json` 的 `style` 字段（密度、动效、字体、圆角、背景纹理）。渲染器完整消费这份配置——`density` 影响间距字号、`motion` 影响入场动画、`mood` 输出为 `data-mood` 与 PPTX `category`。
+
+`theme` 的 7 个颜色在视频与 PPTX 中语义一致：**`paper` 是背景，`ink` 是前景**，深色主题只需交换这两个值。不想手填色值时直接套预设：
+
+```powershell
+uv run lusine-meta apply-theme --preset core/profiles/theme.ink-dark.json --presentation work/my-topic/presentation.json
+```
+
+可用预设：`theme.neutral-accent.json`（通用浅色）、`theme.ink-dark.json`（深色）、`theme.ink-paper-rust.json`（文献纪录）、`theme.ink-paper-teal.json`（研究编辑）；`ingest` 会按资料信号推荐其一。
+
+自动化场景也必须显式确认，避免把一次性参数误当成用户意图：
+
+```powershell
+uv run lusine-meta intake `
+  --brief work/my-topic/topic-brief.json `
+  --answers work/my-topic/answers.json `
+  --yes
+```
+
+完成确认后，再复制模板并填写 `presentation.json`：
 
 最省事的方式不是从零设计 JSON，而是只填写模板里的值。工程已经提供字段名、页面类型、默认主题和命令所需的结构。
 
@@ -97,7 +146,9 @@ work/my-topic/
 | `slides[].narration` | 这一页完整旁白 | 一段自然语言 |
 | `slides[].audio` | 音频文件名 | `audio/opening.wav` |
 
-模板默认包含 `title`、`overview`、`closing` 三页。需要更多页面时，复制一个 slide 对象，修改 `id`、`type` 和其中的 value 即可。支持的页面类型见下一节。
+模板默认包含 `title`、`overview`、`image`、`closing` 四页。需要更多页面时，复制一个 slide 对象，修改 `id`、`type` 和其中的 value 即可。支持的页面类型见下一节。
+
+`eyebrow` 只写语义标签（如 `INTRO`），页码由渲染器按实际顺序生成，不要手写 `01 /`，否则增删页面后会错位。
 
 必须注意：
 
@@ -112,17 +163,35 @@ work/my-topic/
 
 每个 slide 都需要 `id`、`type` 和 `title`：
 
-| `type` | 适合内容 | 额外字段 |
+| `type` | 适合内容 | 必需字段 |
 | --- | --- | --- |
-| `title` | 开场 | `body` |
-| `text` | 正文、说明、列表 | `body`, `bullets` |
-| `overview` | 三列概览 | `stats`, `callout` |
-| `metrics` | 指标和结论 | `stats`, `callout` |
-| `diagram` | 流程或架构 | `nodes`, `callout` |
-| `quote` | 重点引述 | `quote` |
-| `closing` | 结尾页 | `quote`, `subtitle` |
+| `title` | 开场 | — |
+| `text` | 正文、说明、列表 | — |
+| `overview` | 概览（1–4 列） | `stats` |
+| `metrics` | 指标和结论（1–4 列） | `stats` |
+| `diagram` | 流程或架构（1–5 节点） | `nodes` |
+| `image` | 配图、截图、图表 | `image` |
+| `quote` | 重点引述 | `quote` 或 `body` |
+| `closing` | 结尾页 | `quote` |
 
-可选通用字段：`eyebrow`、`subtitle`、`body`、`bullets`、`quote`、`callout`、`narration`、`audio`、`minDurationSec`、`captions`。
+可选通用字段：`eyebrow`、`subtitle`、`body`、`bullets`、`quote`、`callout`、`narration`、`audio`、`minDurationSec`、`captions`、`themeOverride`。
+
+页面类型承诺一份内容：`overview` 缺 `stats`、`image` 缺 `image` 会直接校验失败，而不是渲染出结构合法但视觉空白的页。`stats` 最多 4 个、`nodes` 最多 5 个，两个渲染器都按实际数量均分宽度。
+
+**配图页**（图片放在该主题 `public/images/` 下，支持 png/jpg/jpeg/webp）：
+
+```json
+{
+  "id": "visual", "type": "image", "title": "配图页标题",
+  "image": { "src": "images/shot.png", "alt": "无障碍描述，必填", "caption": "图注", "fit": "contain" }
+}
+```
+
+**分章节换色**（`themeOverride` 只影响该页，未指定的键继承 deck 主题）：
+
+```json
+{ "id": "chapter-2", "type": "title", "title": "第二章", "themeOverride": { "paper": "#2b1f14", "accent3": "#ff7043" } }
+```
 
 ### 3.4 准备旁白音频
 
@@ -181,6 +250,7 @@ Qwen3-TTS 当前生成的是确定性请求计划，模型推理由外部 adapte
 uv run lusine-meta tts-plan `
   --presentation work/my-topic/presentation.json `
   --profile core/profiles/tts-profile.qwen3.json `
+  --brief work/my-topic/topic-brief.json `
   --output out/my-topic/tts-plan.json
 ```
 
@@ -199,7 +269,8 @@ npm run manifest -- `
 npm run check -- `
   --presentation work/my-topic/presentation.json `
   --manifest work/my-topic/audio-manifest.json `
-  --public-dir work/my-topic/public
+  --public-dir work/my-topic/public `
+  --brief work/my-topic/topic-brief.json
 
 npm run export:pptx -- `
   --presentation work/my-topic/presentation.json `
@@ -246,7 +317,7 @@ out/my-topic/
 
 | 命令 | 用途 |
 | --- | --- |
-| `npm run dev` | 预览默认 `example` 示例 |
+| `npm run dev` | Remotion Studio 预览（可传 `--presentation` 预览自己的主题） |
 | `npm run voiceover` | 按 profile 生成旁白 |
 | `npm run manifest` | 读取音频并生成 manifest |
 | `npm run check` | 校验主题和音频 |
@@ -255,6 +326,8 @@ out/my-topic/
 | `npm run lint` | ESLint 和 TypeScript 检查 |
 | `npm test` | Node 测试 |
 | `uv run pytest` | Python 测试 |
+| `uv run lusine-meta ingest` | 分析资料并推荐调色板预设 |
+| `uv run lusine-meta apply-theme` | 把调色板预设写入 `presentation.json` |
 
 所有内容生成命令都可以使用：
 

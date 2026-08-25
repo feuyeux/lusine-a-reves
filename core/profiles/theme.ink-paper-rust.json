@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "paletteId": "ink-paper-rust",
+  "description": "文献纪录感：暖调纸面、铁锈强调色，适合文学与叙事类资料",
+  "theme": {
+    "ink": "#22201d",
+    "paper": "#f4efe6",
+    "muted": "#7a7268",
+    "accent": "#b4552d",
+    "accent2": "#8c6239",
+    "accent3": "#a8432a",
+    "panel": "#fbf8f2"
+  },
+  "style": {
+    "mood": "literary-documentary",
+    "density": "editorial",
+    "motion": "restrained",
+    "cornerRadius": 6,
+    "backgroundPattern": "rules"
+  }
+}

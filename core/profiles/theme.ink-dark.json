@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "paletteId": "ink-dark",
+  "description": "深色演示：深底浅字，验证 theme 变量在反色场景下完整生效",
+  "theme": {
+    "ink": "#eef1f5",
+    "paper": "#15181d",
+    "muted": "#98a2b0",
+    "accent": "#4da3ff",
+    "accent2": "#9b8cff",
+    "accent3": "#ffb454",
+    "panel": "#1f242b"
+  },
+  "style": {
+    "mood": "clear-explanatory",
+    "density": "balanced",
+    "motion": "subtle",
+    "cornerRadius": 14,
+    "backgroundPattern": "grid"
+  }
+}

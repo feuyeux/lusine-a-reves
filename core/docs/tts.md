@@ -1,6 +1,8 @@
 # Deterministic TTS
 
-示例旁白默认按 `core/profiles/tts-profile.json` 生成；新内容应通过 `--profile` 显式指定 profile。当前 Windows 默认使用系统 `Microsoft Huihui Desktop`（System.Speech），固定语速、音量和 WAV 输出。profile 是全局事实来源，禁止在 slide 中写 voice、emotion、style、seed 或 sampling 参数。
+示例旁白默认按 `core/profiles/tts-profile.json` 生成；新内容应通过 `--profile` 显式指定 profile。当前 Windows 默认使用系统 `Microsoft Huihui Desktop`（System.Speech），固定语速、音量和 WAV 输出。profile 是全局事实来源，禁止在 slide 中写 voice、emotion、style、seed 或 sampling 参数。新主题应先确认 topic brief，再用 `tts-plan --brief ...` 生成整场演示的请求计划；不会按页面重新选择。
+
+brief 里的 `voiceCharacter` / `voiceEmotion` / `voicePace` 是**记录性意图，不参与合成**。它们会被写入 plan 的 `voiceIntent`（附带一条说明 note）以保留审计线索，但真正决定声音的始终是 profile 中的 `voice`、`emotion`、`style`、`rate` 等固定字段。要改变实际音色，必须更换 profile 或新增一个 profile，而不是修改 brief。
 
 默认本机命令：
 
