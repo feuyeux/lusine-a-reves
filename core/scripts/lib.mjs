@@ -4,12 +4,65 @@ import { fileURLToPath } from "node:url";
 
 export const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
-export function parseArgs(argv) {
+/**
+ * Flags shared by the deck pipeline. Unknown flags are rejected rather than
+ * ignored: a typo like `--presentaton` used to silently validate the bundled
+ * example instead of the caller's deck.
+ */
+export const KNOWN_FLAGS = Object.freeze({
+  presentation: "content JSON path",
+  manifest: "audio manifest path",
+  "public-dir": "topic public/ directory",
+  publicDir: "alias of --public-dir",
+  "output-dir": "output directory",
+  outputDir: "alias of --output-dir",
+  profile: "TTS profile path",
+  brief: "confirmed topic brief path",
+  force: "regenerate existing voiceover files",
+  help: "show usage and exit",
+});
+
+/** Levenshtein distance, used only to suggest a flag for a typo. */
+function editDistance(a, b) {
+  const rows = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
+  for (let j = 0; j <= b.length; j += 1) rows[0][j] = j;
+  for (let i = 1; i <= a.length; i += 1) {
+    for (let j = 1; j <= b.length; j += 1) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      rows[i][j] = Math.min(rows[i - 1][j] + 1, rows[i][j - 1] + 1, rows[i - 1][j - 1] + cost);
+    }
+  }
+  return rows[a.length][b.length];
+}
+
+function suggestFlag(key) {
+  const candidates = Object.keys(KNOWN_FLAGS)
+    .map((flag) => ({ flag, distance: editDistance(key, flag) }))
+    .filter(({ distance }) => distance <= 3)
+    .sort((left, right) => left.distance - right.distance);
+  return candidates[0]?.flag;
+}
+
+export function usage(command, extraFlags = {}) {
+  const flags = { ...KNOWN_FLAGS, ...extraFlags };
+  const lines = Object.entries(flags).map(([flag, description]) => `  --${flag.padEnd(14)} ${description}`);
+  return `Usage: node core/scripts/${command} [flags]\n\nFlags:\n${lines.join("\n")}`;
+}
+
+export function parseArgs(argv, extraFlags = {}) {
+  const allowed = new Set([...Object.keys(KNOWN_FLAGS), ...Object.keys(extraFlags)]);
   const args = {};
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
     if (!token.startsWith("--")) throw new Error(`Unexpected argument: ${token}`);
     const [key, inlineValue] = token.slice(2).split("=", 2);
+    if (!allowed.has(key)) {
+      const suggestion = suggestFlag(key);
+      throw new Error(
+        `Unknown flag: --${key}${suggestion ? ` (did you mean --${suggestion}?)` : ""}`
+        + `\nKnown flags: ${[...allowed].map((flag) => `--${flag}`).join(", ")}`,
+      );
+    }
     if (inlineValue !== undefined) {
       args[key] = inlineValue;
       continue;
@@ -21,6 +74,27 @@ export function parseArgs(argv) {
     }
     args[key] = next;
     index += 1;
+  }
+  return args;
+}
+
+/**
+ * Script-facing wrapper: parseArgs stays throwing (and unit-testable) while
+ * callers get a one-line error instead of a stack trace.
+ */
+export function parseCliArgs(argv, { command, description, extraFlags = {} } = {}) {
+  let args;
+  try {
+    args = parseArgs(argv, extraFlags);
+  } catch (error) {
+    console.error(error.message);
+    if (command) console.error(`\n${usage(command, extraFlags)}`);
+    process.exit(1);
+  }
+  if (args.help) {
+    if (description) console.log(`${description}\n`);
+    console.log(usage(command ?? "<script>", extraFlags));
+    process.exit(0);
   }
   return args;
 }

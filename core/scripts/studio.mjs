@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import { getOutputDir, getPublicDir, loadDeckFiles, parseArgs, root } from "./lib.mjs";
+import { getOutputDir, getPublicDir, loadDeckFiles, parseCliArgs, root } from "./lib.mjs";
 
 /*
  * Launch Remotion Studio against any topic, not just the bundled example.
@@ -13,7 +13,10 @@ import { getOutputDir, getPublicDir, loadDeckFiles, parseArgs, root } from "./li
  *                  --manifest work/my-topic/audio-manifest.json \
  *                  --public-dir work/my-topic/public
  */
-const args = parseArgs(process.argv.slice(2));
+const args = parseCliArgs(process.argv.slice(2), {
+  command: "studio.mjs",
+  description: "Open Remotion Studio on a deck (defaults to the bundled example).",
+});
 const { presentation, manifest } = loadDeckFiles(args);
 const outputDir = getOutputDir(args);
 fs.mkdirSync(outputDir, { recursive: true });

@@ -2,9 +2,12 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { assertAudibleAudio } from "./media.mjs";
-import { getAudioAssetPath, loadDeckFiles, parseArgs, readJson, resolveFromRoot } from "./lib.mjs";
+import { getAudioAssetPath, loadDeckFiles, parseCliArgs, readJson, resolveFromRoot } from "./lib.mjs";
 
-const args = parseArgs(process.argv.slice(2));
+const args = parseCliArgs(process.argv.slice(2), {
+  command: "generate-voiceover.mjs",
+  description: "Generate narration audio with the selected TTS profile.",
+});
 const { presentation } = loadDeckFiles(args);
 const profilePath = resolveFromRoot(args.profile, "core/profiles/tts-profile.json");
 const profile = readJson(profilePath);

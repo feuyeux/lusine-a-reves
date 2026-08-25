@@ -12,6 +12,32 @@ export const SLIDE_TYPES = [
 export const MAX_STATS = 4;
 export const MAX_DIAGRAM_NODES = 5;
 
+// Single source of truth for style.density. The video renderer injects these
+// as CSS variables and the PPTX exporter scales its type size by `text`, so
+// one deck never reads denser in one output than in the other.
+export const DENSITY_SCALES = {
+  editorial: { gap: 1.18, text: 1.06 },
+  information: { gap: 0.82, text: 0.92 },
+  balanced: { gap: 1, text: 1 },
+  airy: { gap: 1.32, text: 1.1 },
+} as const;
+
+// style.motion is a rendering contract, not a label: each mode maps to a
+// spring configuration and an entry travel distance.
+export const MOTION_CONFIGS = {
+  restrained: { damping: 26, stiffness: 70, distance: 10 },
+  measured: { damping: 22, stiffness: 90, distance: 16 },
+  subtle: { damping: 18, stiffness: 110, distance: 22 },
+  energetic: { damping: 12, stiffness: 170, distance: 34 },
+} as const;
+
+// Literal tuples so Zod infers exact union types. `satisfies` blocks a key that
+// has no scale entry; the "covers every key" direction is asserted in tests.
+export const DENSITY_KEYS = ["editorial", "information", "balanced", "airy"] as const satisfies
+  readonly (keyof typeof DENSITY_SCALES)[];
+export const MOTION_KEYS = ["restrained", "measured", "subtle", "energetic"] as const satisfies
+  readonly (keyof typeof MOTION_CONFIGS)[];
+
 // Asset paths stay inside the caller's public/ directory. The scripts enforce
 // this too (assertSafeAudioPath), but the schema is the single source of truth
 // that every consumer shares, including Remotion Studio which bypasses the
@@ -34,8 +60,11 @@ export const ThemeSchema = z.object({
 
 export const StyleProfileSchema = z.object({
   mood: z.string().min(1).default("clear-explanatory"),
-  density: z.enum(["editorial", "information", "balanced", "airy"]).default("balanced"),
-  motion: z.enum(["restrained", "measured", "subtle", "energetic"]).default("subtle"),
+  // Literal tuples keep Zod's type inference precise; `satisfies` guarantees
+  // they stay a subset of the scale tables, and a unit test guarantees they
+  // cover every key.
+  density: z.enum(DENSITY_KEYS).default("balanced"),
+  motion: z.enum(MOTION_KEYS).default("subtle"),
   headingFont: z.string().min(1).default("-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif"),
   bodyFont: z.string().min(1).default("-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif"),
   cornerRadius: z.number().min(0).max(32).default(16),

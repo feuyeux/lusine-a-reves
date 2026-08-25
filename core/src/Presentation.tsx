@@ -3,7 +3,13 @@ import { Audio } from "@remotion/media";
 import type { Caption } from "@remotion/captions";
 import { AbsoluteFill, Img, Sequence, spring, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 import type { Presentation, Slide, SlideImage, StyleProfile, Theme } from "./domain";
-import { AudioManifestSchema, parsePresentation, resolveSlideTheme } from "./domain";
+import {
+  AudioManifestSchema,
+  DENSITY_SCALES,
+  MOTION_CONFIGS,
+  parsePresentation,
+  resolveSlideTheme,
+} from "./domain";
 import { buildTimeline, type TimelineSlide } from "./timeline";
 import "./styles.css";
 
@@ -11,15 +17,6 @@ type PresentationProps = { presentation: unknown; audioManifest: unknown };
 type SlideFrameProps = { slide: TimelineSlide; index: number; presentation: Presentation };
 type Motion = StyleProfile["motion"];
 type BodyProps = { slide: Slide; theme: Theme; frame: number; fps: number; motion: Motion };
-
-// style.motion is a real rendering contract, not a label: each mode maps to a
-// spring configuration and an entry travel distance.
-const MOTION_CONFIGS: Record<Motion, { damping: number; stiffness: number; distance: number }> = {
-  restrained: { damping: 26, stiffness: 70, distance: 10 },
-  measured: { damping: 22, stiffness: 90, distance: 16 },
-  subtle: { damping: 18, stiffness: 110, distance: 22 },
-  energetic: { damping: 12, stiffness: 170, distance: 34 },
-};
 
 const fadeIn = (frame: number, fps: number, motion: Motion, delay = 0, distanceScale = 1) => {
   const { damping, stiffness, distance } = MOTION_CONFIGS[motion];
@@ -102,11 +99,13 @@ export const SlideFrame: React.FC<SlideFrameProps> = ({ slide, index, presentati
   // Per-slide overrides win over the deck palette, so a chapter can reskin
   // itself without forking the presentation theme.
   const theme = resolveSlideTheme(slide, presentation.theme);
+  const scale = DENSITY_SCALES[style.density];
   const cssVars = {
     "--ink": theme.ink, "--paper": theme.paper, "--muted": theme.muted,
     "--accent": theme.accent, "--accent2": theme.accent2, "--accent3": theme.accent3,
     "--panel": theme.panel, "--radius": `${style.cornerRadius}px`,
     "--heading-font": style.headingFont, "--body-font": style.bodyFont,
+    "--gap-scale": scale.gap, "--text-scale": scale.text,
   } as React.CSSProperties;
   return (
     // data-mood exposes the semantic mood label as a CSS hook for downstream

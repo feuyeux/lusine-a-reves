@@ -1,137 +1,106 @@
 import fs from "node:fs";
-import { loadDeckFiles, getPublicAssetPath, parseArgs, assertConfirmedBrief } from "./lib.mjs";
+import { loadDeckFiles, getPublicAssetPath, parseCliArgs, assertConfirmedBrief } from "./lib.mjs";
+import { AudioManifestSchema, PresentationSchema } from "../src/domain.ts";
 
-const args = parseArgs(process.argv.slice(2));
+/*
+ * Two-stage validation.
+ *
+ * Stage 1 delegates every structural rule to the Zod schema in src/domain.ts,
+ * so this validator can never drift from what the renderers actually accept.
+ * Stage 2 covers what a schema cannot know: whether referenced files exist on
+ * disk and whether the audio manifest agrees with the deck.
+ *
+ * Structural failures short-circuit, because asset checks on a malformed deck
+ * produce noise that hides the real cause.
+ */
+const args = parseCliArgs(process.argv.slice(2), {
+  command: "validate-deck.mjs",
+  description: "Validate a deck: schema, then on-disk assets and manifest agreement.",
+});
 const { presentation, manifest } = loadDeckFiles(args);
-const failures = [];
-const slideTypes = new Set(["title", "text", "overview", "metrics", "diagram", "quote", "closing", "image"]);
-const themeKeys = ["ink", "paper", "muted", "accent", "accent2", "accent3", "panel"];
-const hex = /^#[0-9a-fA-F]{6}$/;
-// Kept in sync with MAX_STATS / MAX_DIAGRAM_NODES in core/src/domain.ts.
-const MAX_STATS = 4;
-const MAX_DIAGRAM_NODES = 5;
-const imagePattern = /^[a-zA-Z0-9_./-]+\.(png|jpg|jpeg|webp)$/;
 
+const fail = (title, messages) => {
+  console.error(`${title}:`);
+  for (const message of messages) console.error(`- ${message}`);
+  process.exit(1);
+};
+
+const briefFailures = [];
 if (args.brief) {
   try {
     assertConfirmedBrief(args.brief);
   } catch (error) {
-    failures.push(error.message);
+    briefFailures.push(error.message);
   }
 }
 
-if (presentation.schemaVersion !== 1) failures.push("schemaVersion must be 1");
-if (!/^[a-z0-9-]+$/.test(presentation.id ?? "")) failures.push("id must be lowercase kebab-case");
-if (typeof presentation.title !== "string" || !presentation.title.trim()) failures.push("title must be non-empty");
-if (!Array.isArray(presentation.slides) || presentation.slides.length === 0) failures.push("slides must be non-empty");
-for (const key of themeKeys) {
-  if (!hex.test(presentation.theme?.[key] ?? "")) failures.push(`theme.${key} must be a six-digit hex color`);
-}
+const formatIssue = (issue) => {
+  const location = issue.path.length ? issue.path.join(".") : "<root>";
+  return `${location}: ${issue.message}`;
+};
 
-const ids = new Set();
-for (const [index, slide] of (presentation.slides ?? []).entries()) {
-  if (!/^[a-z0-9-]+$/.test(slide.id ?? "")) failures.push(`slides[${index}].id must be lowercase kebab-case`);
-  // Duplicate-id detection is also enforced inside src/domain.ts via a Zod
-  // superRefine so every adapter (Remotion/PPTX) sees the same error path.
-  // This standalone check stays as a belt-and-suspenders guard so the Node
-  // validator works without importing the TypeScript domain module.
-  if (ids.has(slide.id)) failures.push(`slides[${index}].id is duplicated: ${slide.id}`);
-  ids.add(slide.id);
-  if (!slideTypes.has(slide.type)) failures.push(`slides[${index}].type is invalid: ${slide.type}`);
-  if (!(Number(slide.minDurationSec) > 0)) failures.push(`slides[${index}].minDurationSec must be positive`);
+const deckResult = PresentationSchema.safeParse(presentation);
+const manifestResult = AudioManifestSchema.safeParse(manifest);
+const structural = [
+  ...briefFailures,
+  ...(deckResult.success ? [] : deckResult.error.issues.map((issue) => `presentation.${formatIssue(issue)}`)),
+  ...(manifestResult.success ? [] : manifestResult.error.issues.map((issue) => `manifest.${formatIssue(issue)}`)),
+];
+if (structural.length > 0) fail("Deck validation failed (structure)", structural);
 
-  // Row layouts in both renderers are bounded by the PPTX canvas width.
-  const stats = slide.stats ?? [];
-  const nodes = slide.nodes ?? [];
-  if (stats.length > MAX_STATS) failures.push(`slides[${index}].stats exceeds ${MAX_STATS} items: ${stats.length}`);
-  if (nodes.length > MAX_DIAGRAM_NODES) failures.push(`slides[${index}].nodes exceeds ${MAX_DIAGRAM_NODES} items: ${nodes.length}`);
+// Parsed data carries schema defaults, so downstream checks never see undefined.
+const deck = deckResult.data;
+const audioManifest = manifestResult.data;
+const failures = [];
 
-  // A slide type promises a payload; an empty one renders a blank page.
-  if (["overview", "metrics"].includes(slide.type) && stats.length === 0) {
-    failures.push(`slides[${index}].stats must have at least one entry for type ${slide.type}`);
-  }
-  if (slide.type === "diagram" && nodes.length === 0) failures.push(`slides[${index}].nodes must have at least one entry`);
-  if (slide.type === "quote" && !(slide.quote ?? slide.body)) failures.push(`slides[${index}] needs quote or body text`);
-  if (slide.type === "closing" && !slide.quote) failures.push(`slides[${index}] needs a quote`);
+for (const [index, slide] of deck.slides.entries()) {
+  const where = `slides[${index}] (${slide.id})`;
 
-  for (const [statIndex, stat] of stats.entries()) {
-    if (stat?.color !== undefined && !hex.test(stat.color)) {
-      failures.push(`slides[${index}].stats[${statIndex}].color must be a six-digit hex color`);
-    }
-  }
-  for (const [nodeIndex, node] of nodes.entries()) {
-    if (node?.color !== undefined && !hex.test(node.color)) {
-      failures.push(`slides[${index}].nodes[${nodeIndex}].color must be a six-digit hex color`);
-    }
-  }
-
-  // Per-slide palette overrides must stay valid colours on known keys.
-  if (slide.themeOverride !== undefined) {
-    if (typeof slide.themeOverride !== "object" || slide.themeOverride === null) {
-      failures.push(`slides[${index}].themeOverride must be an object`);
-    } else {
-      for (const [key, value] of Object.entries(slide.themeOverride)) {
-        if (!themeKeys.includes(key)) failures.push(`slides[${index}].themeOverride has unknown key: ${key}`);
-        else if (!hex.test(value ?? "")) failures.push(`slides[${index}].themeOverride.${key} must be a six-digit hex color`);
-      }
-    }
-  }
-
-  if (slide.type === "image" && !slide.image) failures.push(`slides[${index}].image is required for type image`);
   if (slide.image) {
-    if (!imagePattern.test(slide.image.src ?? "")) {
-      failures.push(`slides[${index}].image.src must be a png, jpg, jpeg, or webp path: ${slide.image.src}`);
-    }
-    if (!slide.image.alt || !String(slide.image.alt).trim()) {
-      failures.push(`slides[${index}].image.alt is required for accessibility`);
-    }
-    if (slide.image.fit !== undefined && !["contain", "cover"].includes(slide.image.fit)) {
-      failures.push(`slides[${index}].image.fit must be contain or cover`);
-    }
-    try {
-      const assetPath = getPublicAssetPath(slide.image.src, args);
-      if (!fs.existsSync(assetPath)) failures.push(`missing image asset: ${assetPath}`);
-    } catch {
-      failures.push(`slides[${index}].image.src must stay under public/: ${slide.image.src}`);
-    }
+    const imagePath = getPublicAssetPath(slide.image.src, args);
+    if (!fs.existsSync(imagePath)) failures.push(`${where} missing image asset: ${imagePath}`);
   }
 
   if (slide.audio) {
-    try {
-      const assetPath = getPublicAssetPath(slide.audio, args);
-      if (!fs.existsSync(assetPath)) failures.push(`missing audio asset: ${assetPath}`);
-    } catch {
-      failures.push(`slides[${index}].audio must stay under public/: ${slide.audio}`);
-    }
-    const entry = manifest[slide.audio];
-    if (!entry?.durationSec || entry.path !== slide.audio) failures.push(`audio manifest missing or stale: ${slide.audio}`);
-    if (entry && entry.durationSec > 0 && slide.captions?.some((caption) => caption.endMs > entry.durationSec * 1000)) {
-      failures.push(`slides[${index}].captions extend beyond audio duration: ${slide.audio}`);
+    const assetPath = getPublicAssetPath(slide.audio, args);
+    if (!fs.existsSync(assetPath)) failures.push(`${where} missing audio asset: ${assetPath}`);
+    const entry = audioManifest[slide.audio];
+    if (!entry || entry.path !== slide.audio) {
+      failures.push(`${where} audio manifest missing or stale: ${slide.audio} (run npm run manifest)`);
+    } else if (slide.captions.some((caption) => caption.endMs > entry.durationSec * 1000)) {
+      failures.push(`${where} captions extend beyond audio duration: ${slide.audio}`);
     }
   }
-  for (const [captionIndex, caption] of (slide.captions ?? []).entries()) {
-    if (!(caption.endMs > caption.startMs)) failures.push(`slides[${index}].captions[${captionIndex}] has invalid range`);
-    if (captionIndex > 0 && caption.startMs < slide.captions[captionIndex - 1].endMs) {
-      failures.push(`slides[${index}].captions[${captionIndex}] overlaps the previous caption`);
-    }
-  }
-}
+  // A slide without audio may still carry captions: page length then comes from
+  // minDurationSec and CaptionOverlay times them off the frame counter.
 
-for (const [key, entry] of Object.entries(manifest)) {
-  if (entry?.path !== key) failures.push(`audio manifest entry path does not match its key: ${key}`);
-  if (!(Number(entry?.durationSec) > 0)) failures.push(`audio manifest duration must be positive: ${key}`);
-  try {
-    if (!fs.existsSync(getPublicAssetPath(key, args))) failures.push(`audio manifest points to missing asset: ${key}`);
-  } catch {
-    failures.push(`audio manifest path must stay under public/: ${key}`);
+  // Adjacent-caption ordering is a sequence rule, so it lives outside the schema.
+  for (const [captionIndex, caption] of slide.captions.entries()) {
+    const previous = slide.captions[captionIndex - 1];
+    if (captionIndex > 0 && caption.startMs < previous.endMs) {
+      failures.push(`${where} captions[${captionIndex}] overlaps the previous caption`);
+    }
   }
 }
 
-if (failures.length > 0) {
-  console.error("Deck validation failed:");
-  for (const failure of failures) console.error(`- ${failure}`);
-  process.exit(1);
+const referenced = new Set(deck.slides.map((slide) => slide.audio).filter(Boolean));
+const orphans = [];
+for (const key of Object.keys(audioManifest)) {
+  // An unused entry is the root cause, so do not also report it as missing.
+  if (!referenced.has(key)) {
+    orphans.push(key);
+  } else if (!fs.existsSync(getPublicAssetPath(key, args))) {
+    failures.push(`audio manifest points to missing asset: ${key}`);
+  }
 }
 
-console.log(`Deck valid: ${presentation.id} (${presentation.slides.length} slides).`);
-console.log(`Audio entries: ${Object.keys(manifest).length}.`);
+if (failures.length > 0) fail("Deck validation failed (assets)", failures);
+
+// Sharing one manifest across decks is legitimate, so this only warns.
+if (orphans.length > 0) {
+  console.warn(`Warning: ${orphans.length} audio manifest entries are unused by this deck:`);
+  for (const key of orphans) console.warn(`- ${key}`);
+}
+
+console.log(`Deck valid: ${deck.id} (${deck.slides.length} slides).`);
+console.log(`Audio entries: ${Object.keys(audioManifest).length}.`);

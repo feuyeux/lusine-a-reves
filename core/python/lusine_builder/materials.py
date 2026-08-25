@@ -22,8 +22,17 @@ LITERARY_MIN_HITS = 3
 LITERARY_MIN_DENSITY_PER_1K = 0.5
 
 
+# Reference material is held in memory to hash and scan it, so cap the size
+# instead of letting an accidental multi-GB input exhaust RAM.
+MAX_MATERIAL_BYTES = 32 * 1024 * 1024
+
+
 class MaterialDecodeError(ValueError):
     """Raised when reference material cannot be decoded as text."""
+
+
+class MaterialTooLargeError(ValueError):
+    """Raised when reference material exceeds MAX_MATERIAL_BYTES."""
 
 
 # Each palette name resolves to a real preset under core/profiles/, so a
@@ -71,6 +80,12 @@ def _literary_signal(text: str, lower_text: str) -> bool:
 def ingest_material(path: Path) -> dict[str, Any]:
     if not path.is_file():
         raise FileNotFoundError(f"Material file not found: {path}")
+    size = path.stat().st_size
+    if size > MAX_MATERIAL_BYTES:
+        raise MaterialTooLargeError(
+            f"Material file is {size / 1048576:.1f} MiB, above the "
+            f"{MAX_MATERIAL_BYTES // 1048576} MiB limit: {path}"
+        )
     data = path.read_bytes()
     text, encoding = decode_material(data)
     headings = [m.group(1).strip() for m in re.finditer(r"^#{1,6}\s+(.+)$", text, re.MULTILINE)]

@@ -1,10 +1,13 @@
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { getOutputDir, getPublicDir, loadDeckFiles, parseArgs, root } from "./lib.mjs";
+import { getOutputDir, getPublicDir, loadDeckFiles, parseCliArgs, root } from "./lib.mjs";
 import { assertRenderedVideoAudible } from "./media.mjs";
 
-const args = parseArgs(process.argv.slice(2));
+const args = parseCliArgs(process.argv.slice(2), {
+  command: "render.mjs",
+  description: "Refresh the manifest, validate, then render the deck to MP4.",
+});
 const { presentation } = loadDeckFiles(args);
 const remotion = path.join(root, "node_modules", "@remotion", "cli", "remotion-cli.js");
 const run = (command, args) => {

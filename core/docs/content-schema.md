@@ -58,6 +58,8 @@
 | `backgroundPattern` | 背景纹理（`grid`/`rules`/`none`） | 视频 |
 | `mood` | 语义标签，输出为 `data-mood` 属性与 PPTX `category` | 供下游 CSS/元数据消费 |
 
+`density` 与 `motion` 的具体数值定义在 `core/src/domain.ts` 的 `DENSITY_SCALES` 和 `MOTION_CONFIGS`，视频端注入为 `--gap-scale`/`--text-scale` CSS 变量，PPTX 端按同一张表缩放字号，因此两个输出不会各自漂移。
+
 字体只能使用渲染机与阅读机上已安装的字体：工程不加载 webfont，缺失字体会静默回退到系统 sans-serif。
 
 ### 分章节换色
@@ -95,3 +97,11 @@ uv run lusine-meta apply-theme --preset core/profiles/theme.ink-paper-rust.json 
 ```
 
 字幕属于 slide，而不是渲染器中的字符串常量。校验会拒绝相互重叠或超出音频时长的字幕。目前需要手工填写时间轴；未来可以由 ASR adapter 自动写入同一字段。
+
+## 校验行为
+
+`npm run check` 分两阶段报错：先用 schema 检查结构（失败即停止，避免资产噪音掩盖根因），再检查磁盘资产与 manifest 一致性。
+
+- 参数名拼错会直接报错并给出建议，不会静默回退到内置示例。
+- manifest 中未被任何 slide 引用的条目只警告，不失败（多 deck 共用一份 manifest 是合法用法）。
+- 一页可以只有 `captions` 而没有 `audio`：页面时长由 `minDurationSec` 决定，字幕按帧计时照常显示。

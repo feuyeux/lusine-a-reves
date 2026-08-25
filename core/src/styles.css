@@ -18,10 +18,12 @@
   overflow: hidden;
 }
 
-.density-editorial { --gap-scale: 1.18; --text-scale: 1.06; }
-.density-information { --gap-scale: .82; --text-scale: .92; }
-.density-balanced { --gap-scale: 1; --text-scale: 1; }
-.density-airy { --gap-scale: 1.32; --text-scale: 1.1; }
+/*
+ * The .density-* class stays on the slide as a styling hook for downstream
+ * overrides, but the scale numbers come from DENSITY_SCALES in domain.ts and
+ * are injected as --gap-scale / --text-scale, so the video and PPTX outputs
+ * cannot drift apart.
+ */
 
 html, body { margin: 0; padding: 0; background: var(--paper, #f5f5f7); color: var(--ink, #1d1d1f); font-family: var(--body-font, sans-serif); }
 body { overflow: hidden; }

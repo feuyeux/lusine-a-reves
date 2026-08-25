@@ -47,3 +47,28 @@ validate-deck <---- 调用方 public/audio + audio-manifest
 ```
 
 `npm run render` 会先刷新 audio manifest，再执行结构校验，最后才启动 Remotion。任何缺音频、时长无效或 slide 结构错误都会在编码前失败。
+
+## 单一事实来源
+
+跨输出的规则只在 `core/src/domain.ts` 定义一次，其它消费者一律导入，不再各写一份：
+
+| 常量 | 含义 | 消费者 |
+| --- | --- | --- |
+| `PresentationSchema` | 全部结构规则 | Remotion 渲染器、`validate-deck.mjs` |
+| `MAX_STATS` / `MAX_DIAGRAM_NODES` | 单行布局容量 | schema 校验、两个渲染器的排版 |
+| `DENSITY_SCALES` | `style.density` 的间距/字号系数 | `Presentation.tsx` 注入 CSS 变量、`export-pptx.mjs` 缩放字号 |
+| `MOTION_CONFIGS` | `style.motion` 的 spring 参数 | `Presentation.tsx` |
+| `SLIDE_TYPES` | 合法页面类型 | schema 校验 |
+
+Node 22+ 可直接 `import` TypeScript，所以 `.mjs` 脚本能复用同一份 schema。`validate-deck.mjs` 因此只负责 schema 无法判断的部分：磁盘上的资产是否存在、manifest 是否与 deck 一致、相邻字幕是否重叠。
+
+`styles.css` 不含任何硬编码颜色或密度数值——颜色全部来自 `--ink`/`--paper`/`--muted`/`--accent*`/`--panel`，密度来自 `--gap-scale`/`--text-scale`。这条约束由测试 `customization.test.mjs` 与 `cli-contract.test.mjs` 守护。
+
+## 校验分层
+
+`validate-deck.mjs` 分两个阶段并分别报错：
+
+1. **结构阶段** — 委托给 Zod schema。失败即短路退出，因为在结构错误的 deck 上做资产检查只会产生淹没根因的噪音。
+2. **资产阶段** — 文件是否存在、manifest 是否过期、字幕是否越界。
+
+manifest 中未被任何 slide 引用的条目只是警告（多个 deck 共用一份 manifest 是合法用法），不会让构建失败。

@@ -337,7 +337,24 @@ out/my-topic/
 --public-dir <path>     主题的 public 目录
 --profile <path>        TTS profile
 --output-dir <path>     输出目录
+--force                 重新生成已存在的旁白 / 强制重新探测音频
+--help                  显示该命令的用法
 ```
+
+参数名会被严格校验：拼错会直接报错并给出最接近的建议，而不是静默回退到内置示例。
+
+```text
+$ npm run check -- --presentaton work/my-topic/presentation.json
+Unknown flag: --presentaton (did you mean --presentation?)
+```
+
+任何脚本都可以用 `--help` 查看用法：
+
+```powershell
+node core/scripts/render.mjs --help
+```
+
+`npm run manifest` 会按内容哈希跳过未变的音频（`ffmpeg volumedetect` 需要解码整个音频文件）。示例的 7 段共 110 秒旁白，全量探测约 0.32s，全部命中缓存约 0.03s；音频越长收益越明显。用 `--force` 可强制重新探测。
 
 ## 代码位置
 

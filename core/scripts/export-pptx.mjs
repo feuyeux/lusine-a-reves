@@ -2,9 +2,13 @@ import fs from "node:fs";
 import path from "node:path";
 import pptxgen from "pptxgenjs";
 import { spawnSync } from "node:child_process";
-import { getOutputDir, getPublicAssetPath, loadDeckFiles, parseArgs, root } from "./lib.mjs";
+import { getOutputDir, getPublicAssetPath, loadDeckFiles, parseCliArgs, root } from "./lib.mjs";
+import { DENSITY_SCALES } from "../src/domain.ts";
 
-const args = parseArgs(process.argv.slice(2));
+const args = parseCliArgs(process.argv.slice(2), {
+  command: "export-pptx.mjs",
+  description: "Export the deck to an editable PPTX file.",
+});
 const { presentation } = loadDeckFiles(args);
 const validation = spawnSync(process.execPath, [path.join(root, "core", "scripts", "validate-deck.mjs"), ...process.argv.slice(2)], { stdio: "inherit" });
 if (validation.status !== 0) process.exit(validation.status ?? 1);
@@ -18,9 +22,9 @@ const MARGIN_IN = 0.55;
 const CONTENT_WIDTH_IN = CANVAS_WIDTH_IN - MARGIN_IN * 2;
 
 const style = presentation.style ?? {};
-// Density affects PPTX type size the same way it affects the video renderer,
-// so one deck does not read denser in one output than the other.
-const TEXT_SCALE = { editorial: 1.06, information: 0.92, balanced: 1, airy: 1.1 }[style.density ?? "balanced"] ?? 1;
+// Density affects PPTX type size the same way it affects the video renderer.
+// The scale table lives in src/domain.ts so both outputs share one source.
+const TEXT_SCALE = (DENSITY_SCALES[style.density ?? "balanced"] ?? DENSITY_SCALES.balanced).text;
 const fz = (size) => Math.round(size * TEXT_SCALE * 10) / 10;
 
 const pptx = new pptxgen();
