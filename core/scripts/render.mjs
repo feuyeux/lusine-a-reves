@@ -16,8 +16,8 @@ const run = (command, args) => {
   if (result.status !== 0) process.exit(result.status ?? 1);
 };
 
-run(process.execPath, ["core/scripts/build-audio-manifest.mjs", ...process.argv.slice(2)]);
-run(process.execPath, ["core/scripts/validate-deck.mjs", ...process.argv.slice(2)]);
+run(process.execPath, [path.join(root, "core", "scripts", "build-audio-manifest.mjs"), ...process.argv.slice(2)]);
+run(process.execPath, [path.join(root, "core", "scripts", "validate-deck.mjs"), ...process.argv.slice(2)]);
 const { manifest } = loadDeckFiles(args);
 const outputDir = getOutputDir(args);
 fs.mkdirSync(outputDir, { recursive: true });

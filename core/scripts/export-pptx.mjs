@@ -20,6 +20,8 @@ fs.mkdirSync(outputDir, { recursive: true });
 const CANVAS_WIDTH_IN = 13.333;
 const MARGIN_IN = 0.55;
 const CONTENT_WIDTH_IN = CANVAS_WIDTH_IN - MARGIN_IN * 2;
+const BODY_COLUMN_GAP_IN = 0.35;
+const BODY_COLUMN_WIDTH_IN = (CONTENT_WIDTH_IN - BODY_COLUMN_GAP_IN) / 2;
 
 const style = presentation.style ?? {};
 // Density affects PPTX type size the same way it affects the video renderer.
@@ -29,25 +31,25 @@ const fz = (size) => Math.round(size * TEXT_SCALE * 10) / 10;
 
 const pptx = new pptxgen();
 pptx.layout = "LAYOUT_WIDE";
-pptx.author = presentation.author ?? "Lusine a Reves Meta Builder";
+pptx.author = presentation.author ?? presentation.brand;
 pptx.subject = presentation.title;
 pptx.title = presentation.title;
-pptx.company = "Lusine a Reves Meta Builder";
+pptx.company = presentation.brand;
 // Surface the semantic mood so it survives into the delivered artefact.
 if (style.mood) pptx.category = style.mood;
-pptx.lang = "zh-CN";
+pptx.lang = presentation.locale;
 
 const c = (value) => value.replace(/^#/, "");
 const headingFont = style.headingFont?.split(",")[0]?.replaceAll("'", "").replaceAll('"', "").trim() || "Aptos Display";
 const bodyFont = style.bodyFont?.split(",")[0]?.replaceAll("'", "").replaceAll('"', "").trim() || "Aptos";
-pptx.theme = { headFontFace: headingFont, bodyFontFace: bodyFont, lang: "zh-CN" };
+pptx.theme = { headFontFace: headingFont, bodyFontFace: bodyFont, lang: presentation.locale };
 
 // Theme semantics match the video renderer exactly: `paper` is the background,
 // `ink` is the foreground. Per-slide themeOverride is applied on top.
 const themeFor = (item) => ({ ...presentation.theme, ...(item.themeOverride ?? {}) });
 
 const addHeader = (slide, item, index, theme) => {
-  slide.addText("LUSINE / META BUILDER", { x: MARGIN_IN, y: 0.35, w: 3, h: 0.25, fontFace: bodyFont, fontSize: fz(8), bold: true, charSpacing: 2, color: c(theme.muted), margin: 0 });
+  slide.addText(presentation.brand, { x: MARGIN_IN, y: 0.35, w: 3, h: 0.25, fontFace: bodyFont, fontSize: fz(8), bold: true, charSpacing: 2, color: c(theme.muted), margin: 0, fit: "shrink" });
   slide.addText(`${String(index + 1).padStart(2, "0")} / ${String(presentation.slides.length).padStart(2, "0")}   ${item.eyebrow ?? item.type.toUpperCase()}`, { x: MARGIN_IN, y: 0.75, w: 8, h: 0.25, fontSize: fz(8), bold: true, charSpacing: 1.2, color: c(theme.accent2), margin: 0 });
   slide.addText(item.title, { x: MARGIN_IN, y: 1.08, w: CONTENT_WIDTH_IN, h: 0.72, fontFace: headingFont, fontSize: fz(28), bold: true, color: c(theme.ink), margin: 0, breakLine: false, fit: "shrink" });
   if (item.subtitle) slide.addText(item.subtitle, { x: MARGIN_IN, y: 1.9, w: 10, h: 0.4, fontSize: fz(12), color: c(theme.muted), margin: 0, fit: "shrink" });
@@ -102,14 +104,14 @@ const addBody = (slide, item, theme) => {
   else if (item.type === "diagram") addNodes(slide, item, theme);
   else if (item.type === "image") addImage(slide, item, theme);
   else if (item.type === "quote" || item.type === "closing") {
-    slide.addText(item.quote ?? item.body ?? "", { x: 0.75, y: 3.35, w: 8.2, h: 1.4, fontSize: fz(25), bold: true, color: c(theme.accent3), margin: 0, fit: "shrink" });
+    slide.addText(item.quote ?? item.body ?? "", { x: MARGIN_IN, y: 3.35, w: CONTENT_WIDTH_IN, h: 1.4, fontSize: fz(25), bold: true, color: c(theme.accent3), margin: 0, fit: "shrink" });
   } else {
-    if (item.body) slide.addText(item.body, { x: 0.75, y: 3.1, w: 5.2, h: 2.0, fontSize: fz(16), color: c(theme.ink), margin: 0.05, breakLine: false, fit: "shrink" });
-    if (item.bullets?.length) slide.addText(item.bullets.map((bullet) => ({ text: bullet, options: { bullet: { indent: 12 }, hanging: 3 } })), { x: 6.15, y: 3.1, w: 3.0, h: 2.3, fontSize: fz(13), color: c(theme.ink), breakLine: false, margin: 0.08, valign: "mid", fit: "shrink" });
+    if (item.body) slide.addText(item.body, { x: MARGIN_IN, y: 3.1, w: BODY_COLUMN_WIDTH_IN, h: 2.0, fontSize: fz(16), color: c(theme.ink), margin: 0.05, breakLine: false, fit: "shrink" });
+    if (item.bullets?.length) slide.addText(item.bullets.map((bullet) => ({ text: bullet, options: { bullet: { indent: 12 }, hanging: 3 } })), { x: MARGIN_IN + BODY_COLUMN_WIDTH_IN + BODY_COLUMN_GAP_IN, y: 3.1, w: BODY_COLUMN_WIDTH_IN, h: 2.3, fontSize: fz(13), color: c(theme.ink), breakLine: false, margin: 0.08, valign: "mid", fit: "shrink" });
   }
   // Callouts sit below the image caption band, so image slides skip them here.
   if (item.callout && item.type !== "image") {
-    slide.addText(item.callout, { x: 0.75, y: 6.2, w: 8.7, h: 0.45, fontSize: fz(12), color: c(theme.ink), fill: { color: c(theme.accent), transparency: 88 }, margin: 0.12, fit: "shrink" });
+    slide.addText(item.callout, { x: MARGIN_IN, y: 6.2, w: CONTENT_WIDTH_IN, h: 0.45, fontSize: fz(12), color: c(theme.ink), fill: { color: c(theme.accent), transparency: 88 }, margin: 0.12, fit: "shrink" });
   }
 };
 

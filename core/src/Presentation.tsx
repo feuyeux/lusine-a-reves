@@ -32,15 +32,15 @@ const CaptionOverlay: React.FC<{ captions: Caption[]; show: boolean }> = ({ capt
   return current ? <div className="caption-overlay">{current.text}</div> : null;
 };
 
-const SlideHeader: React.FC<{ slide: Slide; index: number; total: number }> = ({ slide, index, total }) => (
+const SlideHeader: React.FC<{ slide: Slide; index: number; total: number; brand: string }> = ({ slide, index, total, brand }) => (
   <header className="slide-header">
-    <div className="brand"><span className="brand-mark">L</span><span>LUSINE / META BUILDER</span></div>
+    <div className="brand"><span className="brand-mark">{brand.slice(0, 1).toUpperCase()}</span><span>{brand}</span></div>
     <div className="slide-meta">
       <span>{String(index + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}</span>
       <span className="meta-line" />
       <span>{slide.eyebrow ?? slide.type.toUpperCase()}</span>
     </div>
-    <h1>{slide.title.split("\n").map((line) => <React.Fragment key={line}>{line}<br /></React.Fragment>)}</h1>
+    <h1>{slide.title.split("\n").map((line, lineIndex) => <React.Fragment key={`${lineIndex}-${line}`}>{line}<br /></React.Fragment>)}</h1>
     {slide.subtitle && <p className="slide-subtitle">{slide.subtitle}</p>}
   </header>
 );
@@ -89,7 +89,7 @@ const SlideBody: React.FC<BodyProps> = ({ slide, theme, frame, fps, motion }) =>
     case "image": return <div className="image-body">{slide.image && <ImageFigure image={slide.image} />}{slide.callout && <div className="callout">{slide.callout}</div>}</div>;
     case "quote": return <blockquote className="quote">{slide.quote ?? slide.body}</blockquote>;
     case "closing": return <div className="closing-body"><div className="closing-quote">{slide.quote}</div></div>;
-    default: return <div className="text-body"><div>{slide.body && <p>{slide.body}</p>}</div><ul>{slide.bullets.map((bullet) => <li key={bullet}>{bullet}</li>)}</ul></div>;
+    default: return <div className="text-body"><div>{slide.body && <p>{slide.body}</p>}</div><ul>{slide.bullets.map((bullet, bulletIndex) => <li key={`${bulletIndex}-${bullet}`}>{bullet}</li>)}</ul></div>;
   }
 };
 
@@ -114,7 +114,7 @@ export const SlideFrame: React.FC<SlideFrameProps> = ({ slide, index, presentati
       {style.backgroundPattern !== "none" && <div className={`pattern pattern-${style.backgroundPattern}`} />}
       <div className="accent-wash" style={{ background: theme.accent }} />
       <div className="slide-safe">
-        <SlideHeader slide={slide} index={index} total={presentation.slides.length} />
+        <SlideHeader slide={slide} index={index} total={presentation.slides.length} brand={presentation.brand} />
         <main className={`slide-main layout-${slide.type}`} style={fadeIn(frame, fps, style.motion, 5)}>
           <SlideBody slide={slide} theme={theme} frame={frame} fps={fps} motion={style.motion} />
         </main>

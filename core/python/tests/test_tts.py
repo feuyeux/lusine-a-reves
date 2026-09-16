@@ -32,3 +32,10 @@ def test_nondeterministic_profile_is_rejected(tmp_path):
     path.write_text(json.dumps(values), encoding="utf-8")
     with pytest.raises(ValueError, match="randomize"):
         TTSProfile.load(path)
+
+
+def test_all_shipped_profiles_pass_shared_validation():
+    profiles = sorted((ROOT / "core" / "profiles").glob("tts-profile*.json"))
+    assert profiles
+    for path in profiles:
+        TTSProfile.load(path)

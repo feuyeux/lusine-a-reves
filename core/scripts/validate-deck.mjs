@@ -71,8 +71,9 @@ for (const [index, slide] of deck.slides.entries()) {
       failures.push(`${where} captions extend beyond audio duration: ${slide.audio}`);
     }
   }
-  // A slide without audio may still carry captions: page length then comes from
-  // minDurationSec and CaptionOverlay times them off the frame counter.
+  if (!slide.audio && slide.captions.some((caption) => caption.endMs > slide.minDurationSec * 1000)) {
+    failures.push(`${where} captions extend beyond the ${slide.minDurationSec}s slide duration`);
+  }
 
   // Adjacent-caption ordering is a sequence rule, so it lives outside the schema.
   for (const [captionIndex, caption] of slide.captions.entries()) {

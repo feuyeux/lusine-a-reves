@@ -77,6 +77,9 @@ export const CaptionSchema = z.object({
   endMs: z.number().positive(),
   timestampMs: z.number().nullable(),
   confidence: z.number().min(0).max(1).nullable(),
+}).refine((caption) => caption.endMs > caption.startMs, {
+  path: ["endMs"],
+  message: "must be greater than startMs",
 });
 
 const StatSchema = z.object({
@@ -134,6 +137,8 @@ export const PresentationSchema = z.object({
   title: z.string().min(1),
   subtitle: z.string().optional(),
   author: z.string().optional(),
+  brand: z.string().min(1).default("Presentation Builder"),
+  locale: z.string().regex(/^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/).default("en-US"),
   fps: z.number().int().min(1).max(120).default(30),
   width: z.number().int().positive().default(1920),
   height: z.number().int().positive().default(1080),

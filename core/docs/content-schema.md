@@ -47,6 +47,8 @@
 
 `theme` 的 7 个颜色语义在两个输出中完全一致：**`paper` 是背景，`ink` 是前景**。`accent3` 是引述与结尾页的强调色。深色主题只需把 `paper` 设为深色、`ink` 设为浅色，渲染器不含任何硬编码颜色。
 
+`brand` 控制视频页眉和 PPTX 公司元数据，默认 `Presentation Builder`；`locale` 控制 PPTX 语言标记，默认 `en-US`。示例和模板显式设置各自的值，因此调用方无需修改渲染器来替换品牌或语言。
+
 `style` 字段全部生效：
 
 | 字段 | 作用 | 影响范围 |
@@ -96,7 +98,7 @@ uv run lusine-meta apply-theme --preset core/profiles/theme.ink-paper-rust.json 
 }
 ```
 
-字幕属于 slide，而不是渲染器中的字符串常量。校验会拒绝相互重叠或超出音频时长的字幕。目前需要手工填写时间轴；未来可以由 ASR adapter 自动写入同一字段。
+字幕属于 slide，而不是渲染器中的字符串常量。每条字幕必须满足 `endMs > startMs`；校验会拒绝相互重叠、超出音频时长的字幕，以及无音频页中超出 `minDurationSec` 的字幕。目前需要手工填写时间轴；未来可以由 ASR adapter 自动写入同一字段。
 
 ## 校验行为
 
@@ -104,4 +106,4 @@ uv run lusine-meta apply-theme --preset core/profiles/theme.ink-paper-rust.json 
 
 - 参数名拼错会直接报错并给出建议，不会静默回退到内置示例。
 - manifest 中未被任何 slide 引用的条目只警告，不失败（多 deck 共用一份 manifest 是合法用法）。
-- 一页可以只有 `captions` 而没有 `audio`：页面时长由 `minDurationSec` 决定，字幕按帧计时照常显示。
+- 一页可以只有 `captions` 而没有 `audio`：页面时长由 `minDurationSec` 决定，字幕按帧计时照常显示，但其 `endMs` 不得超过该时长。

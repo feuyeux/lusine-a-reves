@@ -4,6 +4,8 @@
   "title": "主题名称",
   "subtitle": "一句话说明这场演讲",
   "author": "作者名称",
+  "brand": "PRESENTATION BUILDER",
+  "locale": "zh-CN",
   "fps": 30,
   "width": 1920,
   "height": 1080,

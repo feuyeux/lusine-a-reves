@@ -84,6 +84,11 @@ def _node_check(args: argparse.Namespace) -> int:
 def _intake(args: argparse.Namespace) -> int:
     brief_path = _path(args.brief, "work/topic/topic-brief.json")
     brief = load_brief(brief_path)
+    if brief.get("status") == "confirmed" and not args.revise:
+        print(f"Topic brief already confirmed: {brief_path}")
+        print("Use --revise to reopen it before adding source material or changing answers.")
+        return 0
+
     if args.source:
         material = ingest_material(_path(args.source, ""))
         brief["materials"] = [material]
@@ -94,11 +99,6 @@ def _intake(args: argparse.Namespace) -> int:
                 f"资料驱动的 {suggestion['mood']} 视觉；采用 {suggestion['palette']} 配色，"
                 f"信息密度为 {suggestion['density']}，动效保持 {suggestion['motion']}。"
             )
-    if brief.get("status") == "confirmed" and not args.revise:
-        print(f"Topic brief already confirmed: {brief_path}")
-        print("Use --revise to reopen it.")
-        return 0
-
     if args.answers:
         answers_path = _path(args.answers, "")
         answers = _load_json(answers_path)

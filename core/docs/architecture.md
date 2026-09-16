@@ -60,7 +60,7 @@ validate-deck <---- 调用方 public/audio + audio-manifest
 | `MOTION_CONFIGS` | `style.motion` 的 spring 参数 | `Presentation.tsx` |
 | `SLIDE_TYPES` | 合法页面类型 | schema 校验 |
 
-Node 22+ 可直接 `import` TypeScript，所以 `.mjs` 脚本能复用同一份 schema。`validate-deck.mjs` 因此只负责 schema 无法判断的部分：磁盘上的资产是否存在、manifest 是否与 deck 一致、相邻字幕是否重叠。
+Node 22.18.0+ 可直接 `import` TypeScript，所以 `.mjs` 脚本能复用同一份 schema。`validate-deck.mjs` 因此只负责 schema 无法判断的部分：磁盘上的资产是否存在、manifest 是否与 deck 一致、相邻字幕是否重叠，以及无音频页的字幕是否超出页面时长。
 
 `styles.css` 不含任何硬编码颜色或密度数值——颜色全部来自 `--ink`/`--paper`/`--muted`/`--accent*`/`--panel`，密度来自 `--gap-scale`/`--text-scale`。这条约束由测试 `customization.test.mjs` 与 `cli-contract.test.mjs` 守护。
 

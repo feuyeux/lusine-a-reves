@@ -21,6 +21,7 @@ from lusine_builder.cosyvoice_adapter import (  # noqa: E402
     parse_args,
     prepare_audio,
     resolve_runtime_path,
+    resolve_runtime_root,
     split_text,
 )
 
@@ -51,6 +52,12 @@ def test_resolve_runtime_path_relative_joins_under_root(tmp_path: Path) -> None:
     resolved = resolve_runtime_path(tmp_path, "models/checkpoint.pt")
     assert resolved == tmp_path / "models" / "checkpoint.pt"
     assert resolved.is_absolute()
+
+
+def test_runtime_root_requires_explicit_configuration(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("COSYVOICE_ROOT", raising=False)
+    with pytest.raises(ValueError, match="COSYVOICE_ROOT"):
+        resolve_runtime_root({})
 
 
 def test_run_rejects_non_list_requests() -> None:

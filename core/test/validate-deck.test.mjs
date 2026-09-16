@@ -66,3 +66,24 @@ test("validation rejects overlapping captions", () => {
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /overlaps/);
 });
+
+test("validation rejects captions outside a silent slide duration", () => {
+  const presentation = structuredClone(sample);
+  const slide = presentation.slides[0];
+  delete slide.audio;
+  slide.minDurationSec = 6;
+  slide.captions = [{ text: "invisible", startMs: 10000, endMs: 20000, timestampMs: null, confidence: null }];
+  const result = runValidation(presentation, sampleManifest);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /captions extend beyond the 6s slide duration/);
+});
+
+test("schema rejects captions that end before they start", () => {
+  const presentation = structuredClone(sample);
+  presentation.slides[0].captions = [
+    { text: "backwards", startMs: 1000, endMs: 500, timestampMs: null, confidence: null },
+  ];
+  const result = runValidation(presentation, sampleManifest);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /must be greater than startMs/);
+});

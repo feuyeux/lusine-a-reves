@@ -47,6 +47,7 @@ test("every pipeline script answers --help with exit code 0", () => {
   const scripts = [
     "validate-deck.mjs", "build-audio-manifest.mjs", "export-pptx.mjs",
     "render.mjs", "studio.mjs", "generate-voiceover.mjs",
+    "run-edge-tts.mjs", "run-qwen3-tts.mjs",
   ];
   for (const script of scripts) {
     const result = run(script, ["--help"]);
@@ -60,6 +61,61 @@ test("an unknown flag fails with a readable message and no stack trace", () => {
   assert.equal(result.status, 1);
   assert.match(result.stderr, /Unknown flag: --turbo/);
   assert.doesNotMatch(result.stderr, /at \w+ \(/, "should not print a stack trace");
+});
+
+test("render resolves child scripts from the repository root", () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "lusine-render-cwd-"));
+  const deckPath = path.join(directory, "presentation.json");
+  fs.writeFileSync(deckPath, JSON.stringify({
+    schemaVersion: 1,
+    id: "portable-render",
+    title: "T",
+    theme: {
+      ink: "#111111", paper: "#ffffff", muted: "#888888",
+      accent: "#0071e3", accent2: "#5e5ce6", accent3: "#ff9f0a", panel: "#ffffff",
+    },
+    slides: [{ id: "a", type: "title", title: "T", audio: "audio/missing.wav" }],
+  }));
+  const result = spawnSync(process.execPath, [path.resolve("core/scripts/render.mjs"), "--presentation", deckPath], {
+    cwd: os.tmpdir(), encoding: "utf8",
+  });
+  fs.rmSync(directory, { recursive: true, force: true });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /Missing audio asset:/);
+  assert.doesNotMatch(result.stderr, /Cannot find module .*core\/scripts\/build-audio-manifest/);
+});
+
+test("windows-sapi fails clearly before execution on non-Windows hosts", { skip: process.platform === "win32" }, () => {
+  const result = run("generate-voiceover.mjs", []);
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /windows-sapi profile requires Windows/);
+  assert.doesNotMatch(result.stderr, /at \w+ \(/, "should not print a stack trace");
+});
+
+test("legacy voiceover rejects Edge TTS before it can write raw MP3 as WAV", () => {
+  const result = run("generate-voiceover.mjs", ["--profile", "core/profiles/tts-profile.edge-tts.json"]);
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /Use npm run voiceover:edge/);
+  assert.doesNotMatch(result.stderr, /at \w+ \(/, "should not print a stack trace");
+});
+
+test("TTS installers pin their direct runtime dependencies", () => {
+  const edgeInstaller = fs.readFileSync(path.join("core", "scripts", "install-edge-tts.sh"), "utf8");
+  const qwenInstaller = fs.readFileSync(path.join("core", "scripts", "install-qwen3-tts.sh"), "utf8");
+  assert.match(edgeInstaller, /EDGE_TTS_VERSION="7\.2\.8"/);
+  assert.match(edgeInstaller, /edge-tts==\$EDGE_TTS_VERSION/);
+  assert.match(qwenInstaller, /QWEN_TTS_VERSION="0\.1\.1"/);
+  assert.match(qwenInstaller, /qwen-tts==\$QWEN_TTS_VERSION/);
+  assert.match(qwenInstaller, /torch==\$TORCH_VERSION/);
+  assert.match(qwenInstaller, /torchaudio==\$TORCH_VERSION/);
+});
+
+test("Edge runner emits normalized WAV audio through FFmpeg", () => {
+  const runner = fs.readFileSync(path.join("core", "scripts", "run-edge-tts.mjs"), "utf8");
+  assert.match(runner, /-m", "edge_tts/);
+  assert.match(runner, /-c:a", "pcm_s16le/);
+  assert.match(runner, /profile\.sampleRate/);
+  assert.match(runner, /profile\.channels/);
 });
 
 test("density and motion tables cover exactly the schema's accepted values", () => {

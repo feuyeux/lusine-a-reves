@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 
+from lusine_builder import cli
 from lusine_builder.intake import (
     FIELD_KEYS,
     OPTIONAL_FIELD_KEYS,
@@ -124,3 +125,22 @@ def test_slide_count_rejects_non_numeric_input_with_a_readable_message():
 def test_voice_intent_keys_are_all_optional():
     """voice* is recorded intent only, so it can never block a build."""
     assert set(VOICE_INTENT_KEYS).issubset(set(OPTIONAL_FIELD_KEYS))
+
+
+def test_confirmed_intake_requires_revise_before_ingesting_source(tmp_path: Path, monkeypatch):
+    brief_path = tmp_path / "topic-brief.json"
+    brief = apply_answers(empty_brief(), complete_answers())
+    brief["status"] = "confirmed"
+    write_brief(brief_path, brief)
+
+    def unexpected_ingest(_: Path):
+        pytest.fail("confirmed briefs must not ingest material without --revise")
+
+    monkeypatch.setattr(cli, "ingest_material", unexpected_ingest)
+    args = cli.argparse.Namespace(
+        brief=str(brief_path), answers=None, yes=False, revise=False,
+        source=str(tmp_path / "material.md"), minimal=False,
+    )
+    assert cli._intake(args) == 0
+    saved = json.loads(brief_path.read_text(encoding="utf-8"))
+    assert "materials" not in saved

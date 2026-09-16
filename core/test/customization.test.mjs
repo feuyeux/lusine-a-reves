@@ -149,6 +149,19 @@ test("themeOverride rejects a non-hex colour", () => {
   );
 });
 
+test("brand and locale have generic defaults and accept caller values", () => {
+  const defaults = parsePresentation(base([{ id: "a", type: "title", title: "t" }]));
+  assert.equal(defaults.brand, "Presentation Builder");
+  assert.equal(defaults.locale, "en-US");
+  const custom = parsePresentation({
+    ...base([{ id: "a", type: "title", title: "t" }]),
+    brand: "Acme Research",
+    locale: "fr-FR",
+  });
+  assert.equal(custom.brand, "Acme Research");
+  assert.equal(custom.locale, "fr-FR");
+});
+
 test("style density and motion survive parsing with defaults", () => {
   const parsed = parsePresentation(base([{ id: "a", type: "title", title: "t" }]));
   assert.equal(parsed.style.density, "balanced");

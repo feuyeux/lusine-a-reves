@@ -68,7 +68,7 @@ class TTSProfile:
             if not isinstance(self.values.get("seed"), int):
                 raise ValueError("TTS profile seed must be an integer")
         if self.values.get("provider") == "edge-tts":
-            for key in ("rate", "pitch", "volumeAdjustment"):
+            for key in ("rate", "pitchAdjustment", "volumeAdjustment"):
                 if not str(self.values.get(key, "")).strip():
                     raise ValueError(f"TTS profile {key} must be fixed for edge-tts")
         if self.values.get("provider") == "windows-sapi":
@@ -79,7 +79,7 @@ class TTSProfile:
         if self.values.get("provider") == "cosyvoice2":
             if self.values.get("mode") != "zero_shot":
                 raise ValueError("CosyVoice2 production profile must use zero_shot mode")
-            for key in ("runtimeRoot", "modelDir", "promptAudio", "promptText"):
+            for key in ("modelDir", "promptAudio", "promptText"):
                 if not str(self.values.get(key, "")).strip():
                     raise ValueError(f"CosyVoice2 profile {key} must be fixed")
             if not isinstance(self.values.get("seed"), int):

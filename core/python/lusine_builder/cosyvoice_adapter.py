@@ -27,6 +27,15 @@ def resolve_runtime_path(runtime_root: Path, value: str) -> Path:
     return candidate if candidate.is_absolute() else runtime_root / candidate
 
 
+def resolve_runtime_root(profile: dict, runtime_root: Path | None = None) -> Path:
+    """Resolve a caller-configured CosyVoice checkout without host-specific defaults."""
+
+    configured_root = runtime_root or os.environ.get("COSYVOICE_ROOT") or profile.get("runtimeRoot")
+    if not configured_root:
+        raise ValueError("CosyVoice2 requires COSYVOICE_ROOT or profile.runtimeRoot")
+    return Path(configured_root).expanduser().resolve()
+
+
 def load_json(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -106,10 +115,7 @@ def run(profile: dict, requests: list[dict], runtime_root: Path | None = None) -
         if output.suffix.lower() != ".wav":
             raise ValueError(f"CosyVoice request #{index} output must be WAV: {output}")
 
-    source_root = (runtime_root or Path(
-        os.environ.get("COSYVOICE_ROOT")
-        or profile.get("runtimeRoot", "/mnt/d/zoo/cosyvoice")
-    ).expanduser()).resolve()
+    source_root = resolve_runtime_root(profile, runtime_root)
     model_dir = resolve_runtime_path(source_root, profile["modelDir"])
     prompt_audio = resolve_runtime_path(source_root, profile["promptAudio"])
     if not source_root.is_dir():
