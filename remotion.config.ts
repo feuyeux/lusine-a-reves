@@ -4,6 +4,7 @@ import { Config } from "@remotion/cli/config";
 // still available via setOverrideWebpackConfig). @rspack/core ships as a
 // transitive dependency of @remotion/cli so no extra install is required.
 Config.setRspack(true);
-Config.setVideoImageFormat("jpeg");
+// PNG avoids an intermediate JPEG generation loss on small slide text.
+Config.setVideoImageFormat("png");
 Config.setOverwriteOutput(true);
 Config.setPublicDir("example/public");

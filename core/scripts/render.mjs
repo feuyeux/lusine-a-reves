@@ -24,7 +24,14 @@ fs.mkdirSync(outputDir, { recursive: true });
 const propsPath = path.join(outputDir, ".render-props.json");
 fs.writeFileSync(propsPath, `${JSON.stringify({ presentation, audioManifest: manifest }, null, 2)}\n`);
 const outputPath = path.join(outputDir, `${process.env.PRESENTATION_ID || presentation.id}.mp4`);
-run(process.execPath, [remotion, "render", path.join(root, "core", "src", "index.ts"), "Presentation", outputPath, "--props", propsPath, "--public-dir", getPublicDir(args)]);
+run(process.execPath, [
+  remotion, "render", path.join(root, "core", "src", "index.ts"), "Presentation", outputPath,
+  "--props", propsPath,
+  "--public-dir", getPublicDir(args),
+  // Slides contain fine text and diagrams; CRF 16 keeps those edges visibly
+  // sharper than the generic video default while preserving H.264 portability.
+  "--crf", "16",
+]);
 if (presentation.slides.some((slide) => slide.audio)) {
   assertRenderedVideoAudible(outputPath);
   console.log(`Rendered media passed audio gate: ${outputPath}`);

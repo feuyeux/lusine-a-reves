@@ -38,6 +38,22 @@ const run = (command, commandArgs, label) => {
   }
 };
 
+const runEdgeWithRetry = (commandArgs, label, temporaryPath, attempts = 5) => {
+  let lastResult;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    fs.rmSync(temporaryPath, { force: true });
+    lastResult = spawnSync(python, commandArgs, { stdio: "inherit", shell: false });
+    if (!lastResult.error && lastResult.status === 0) return;
+    if (attempt < attempts) {
+      console.warn(`${label} failed on attempt ${attempt}/${attempts}; retrying with the same profile.`);
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, attempt * 5000);
+    }
+  }
+  throw new Error(
+    `${label} failed after ${attempts} attempts: ${lastResult?.error?.message || `exit ${lastResult?.status}`}`,
+  );
+};
+
 for (const slide of narratedSlides) {
   const audioPath = slide.audio || `audio/${slide.id}.wav`;
   if (!audioPath.endsWith(".wav")) {
@@ -55,7 +71,7 @@ for (const slide of narratedSlides) {
   fs.rmSync(rawMp3, { force: true });
   fs.rmSync(temporaryWav, { force: true });
   try {
-    run(python, [
+    runEdgeWithRetry([
       "-m", "edge_tts",
       `--voice=${profile.voice}`,
       `--rate=${profile.rate}`,
@@ -63,7 +79,7 @@ for (const slide of narratedSlides) {
       `--pitch=${profile.pitchAdjustment}`,
       "--text", slide.narration,
       "--write-media", rawMp3,
-    ], `edge-tts synthesis for ${slide.id}`);
+    ], `edge-tts synthesis for ${slide.id}`, rawMp3);
     run(ffmpeg, [
       "-y", "-i", rawMp3,
       "-ar", String(profile.sampleRate), "-ac", String(profile.channels),
@@ -73,6 +89,9 @@ for (const slide of narratedSlides) {
     fs.rmSync(output, { force: true });
     fs.renameSync(temporaryWav, output);
     console.log(`Voiceover generated: ${audioPath} (${measurement.durationSec.toFixed(2)}s)`);
+    // The online consumer endpoint rate-limits rapid sequential requests.
+    // A small deterministic gap is cheaper and more reliable than changing voice.
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 3000);
   } finally {
     fs.rmSync(rawMp3, { force: true });
     fs.rmSync(temporaryWav, { force: true });

@@ -46,7 +46,7 @@ test("usage lists every known flag", () => {
 test("every pipeline script answers --help with exit code 0", () => {
   const scripts = [
     "validate-deck.mjs", "build-audio-manifest.mjs", "export-pptx.mjs",
-    "render.mjs", "studio.mjs", "generate-voiceover.mjs",
+    "render.mjs", "studio.mjs", "generate-voiceover.mjs", "render-slide-stills.mjs",
     "run-edge-tts.mjs", "run-qwen3-tts.mjs",
   ];
   for (const script of scripts) {

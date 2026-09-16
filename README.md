@@ -401,6 +401,7 @@ node core/scripts/render.mjs --help
 - [`core/scripts/render.mjs`](core/scripts/render.mjs)：MP4 生成
 - [`core/docs/content-schema.md`](core/docs/content-schema.md)：完整字段说明
 - [`core/docs/tts.md`](core/docs/tts.md)：TTS 约束和运行边界
+- [`core/docs/maintenance-lessons.md`](core/docs/maintenance-lessons.md)：本轮维护、媒体质量、长任务与清理经验
 
 ## 发布前检查
 
