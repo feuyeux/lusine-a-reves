@@ -1,4 +1,14 @@
-# Lusine a Reves Meta Builder
+# Lusine a Reves
+
+> l'usine à rêves
+>
+> la fábrica de sueños
+>
+> the dream factory
+>
+> Фабрика грёз
+>
+> 夢の工場
 
 用一份 `presentation.json` 生成同一主题的：
 
@@ -12,7 +22,7 @@
 
 ## 1. 安装
 
-需要 Node.js 18+、Python 3.10+、[uv](https://docs.astral.sh/uv/)、FFmpeg 和 FFprobe。
+需要 Node.js 22.18.0+、Python 3.10+、[uv](https://docs.astral.sh/uv/)、FFmpeg 和 FFprobe。
 
 ```powershell
 npm install
@@ -46,6 +56,8 @@ example/content/audio-manifest.json
 example/public/audio/
 ```
 
+示例的 `audio-manifest.json` 已随仓库提交，因此全新克隆可直接运行 `npm test`、`npm run lint` 和 `npm run check`。修改示例音频后再运行 `npm run manifest` 更新它。
+
 导出示例：
 
 ```powershell
@@ -60,7 +72,7 @@ out/signals-systems-stories.pptx
 out/signals-systems-stories.mp4
 ```
 
-`out/` 是被 Git 忽略的本地生成目录。当前完整验证视频位于 `out/migration-check/signals-systems-stories.mp4`。
+`out/` 是被 Git 忽略的本地生成目录；运行 `npm run render` 后，视频位于 `out/signals-systems-stories.mp4`。
 
 ## 3. 制作新主题
 
@@ -72,7 +84,7 @@ out/signals-systems-stories.mp4
 uv run lusine-meta intake --brief work/my-topic/topic-brief.json
 ```
 
-命令会询问 12 项**必答**信息（主题、目标、受众、范围、实体名单、叙事角度、语气、语言、页数、时长、交付物、约束）和 4 项**可选**信息（视觉方向、旁白音色/情绪/语速，可留空跳过），最后展示完整摘要。只有输入 `yes` 才会写入 `status: "confirmed"`。必答项不完整或用户否定确认时保留为 `draft`，不能进入内容撰写阶段。已确认的 brief 默认不会被静默修改，需显式使用 `--revise`。只问必答项可加 `--minimal`。
+命令会询问 12 项**必答**信息（主题、目标、受众、范围、实体名单、叙事角度、语气、语言、页数、时长、交付物、约束）和 4 项**可选**信息（视觉方向、旁白音色/情绪/语速，可留空跳过），最后展示完整摘要。只有输入 `yes` 才会写入 `status: "confirmed"`。必答项不完整或用户否定确认时保留为 `draft`，不能进入内容撰写阶段。已确认的 brief 默认不会被静默修改；即使传入 `--source`，命令也会在分析资料前停止，需显式使用 `--revise`。只问必答项可加 `--minimal`。
 
 旁白音色、情绪、语速**只作意图记录**，不改变任何合成参数——实际声音由 `--profile` 选择的 TTS profile 固定决定。
 
@@ -111,7 +123,7 @@ uv run lusine-meta intake `
 在仓库根目录执行：
 
 ```powershell
-New-Item -ItemType Directory -Force work/my-topic/public/audio
+New-Item -ItemType Directory -Force work/my-topic/public/audio, work/my-topic/public/images
 Copy-Item templates/presentation.template.json work/my-topic/presentation.json
 ```
 
@@ -123,7 +135,8 @@ Copy-Item templates/presentation.template.json work/my-topic/presentation.json
 work/my-topic/
 ├── presentation.json         从模板复制，只修改 value
 └── public/
-    └── audio/                放入或生成旁白
+    ├── audio/                放入或生成旁白
+    └── images/               放入模板 image 页引用的图片
 ```
 
 `work/my-topic` 不要求加入仓库，也可以换成任意目录名或绝对路径。
@@ -138,6 +151,8 @@ work/my-topic/
 | `title` | 演讲标题 | `2026 年机器人趋势` |
 | `subtitle` | 一句话副标题 | `从实验室走向真实世界` |
 | `author` | 作者或团队名 | `Acme Research` |
+| `brand` | 页眉和 PPTX 元数据中的品牌名 | `Acme Research` |
+| `locale` | PPTX 语言/区域标记 | `zh-CN` |
 | `slides[].title` | 每页标题 | `三个变化正在发生` |
 | `slides[].subtitle` | 每页解释 | `它们会改变产品设计` |
 | `slides[].body` | 正文页内容 | 一段解释性文字 |
@@ -224,27 +239,38 @@ npm run voiceover -- `
   --public-dir work/my-topic/public
 ```
 
-Edge TTS 使用：
+Edge TTS 使用 Microsoft 在线语音服务。先创建仓库本地、固定版本的 runtime（不写入项目 Python 环境）：
 
 ```powershell
-npm run voiceover -- `
+npm run install:edge-tts
+npm run voiceover:edge -- `
   --presentation work/my-topic/presentation.json `
   --profile core/profiles/tts-profile.edge-tts.json `
   --public-dir work/my-topic/public
 ```
 
-CosyVoice2 适合高质量旁白，但需要在仓库外准备模型、runtime 和 zero-shot prompt audio。Windows 下通过 WSL2 执行：
+安装脚本固定 `edge-tts==7.2.8`。执行脚本先取得服务端 MP3，再用 FFmpeg 固定转换成 **24 kHz、单声道、PCM 16-bit WAV**，并通过音量门禁；因此 profile 和最终媒体格式保持一致。该路线每次合成都需要网络和 Microsoft 服务可用。
+
+CosyVoice2 适合高质量旁白，但需要在仓库外准备模型、runtime 和 zero-shot prompt audio。随仓库的 profile **不含本机路径**：在 Linux/WSL 中设置 `COSYVOICE_ROOT`，或复制 profile 到调用方目录后填入该机器的 `runtimeRoot`；Windows/WSL2 还需要通过 `COSYVOICE_PYTHON_WSL` 或调用方 profile 的 `wslPython` 指定已安装 adapter 的 Python。配置完成后执行：
 
 ```powershell
 npm run voiceover -- `
   --presentation work/my-topic/presentation.json `
-  --profile core/profiles/tts-profile.cosyvoice2.json `
+  --profile work/my-topic/tts-profile.cosyvoice2.json `
   --public-dir work/my-topic/public
 ```
 
-模型权重和 runtime 不放进仓库。`voice`、speaker、情绪、采样参数统一由 profile 管理，不要写到 slide 里。
+未配置时命令会明确失败，不会猜测驱动器或 `/mnt` 路径。模型权重和 runtime 不放进仓库。`voice`、speaker、情绪、采样参数统一由 profile 管理，不要写到 slide 里。
 
-Qwen3-TTS 当前生成的是确定性请求计划，模型推理由外部 adapter 完成：
+Qwen3-TTS 使用官方 PyTorch `qwen-tts` CustomVoice API；Ubuntu/CUDA 路线先创建隔离 runtime：
+
+```powershell
+npm run install:qwen3-tts
+```
+
+默认固定 `qwen-tts==0.1.1`、CUDA 12.6 的 `torch==2.7.1+cu126` 和同版本 `torchaudio`。如果本机 CUDA 版本不同，必须同时显式设置 `QWEN3_TTS_TORCH_VERSION` 与 `QWEN3_TTS_TORCH_INDEX_URL`，不要混用 wheel 版本。首次合成会按 profile 下载固定模型 `Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice`。
+
+先生成带 profile/request hash 的确定性计划，再执行它：
 
 ```powershell
 uv run lusine-meta tts-plan `
@@ -252,9 +278,14 @@ uv run lusine-meta tts-plan `
   --profile core/profiles/tts-profile.qwen3.json `
   --brief work/my-topic/topic-brief.json `
   --output out/my-topic/tts-plan.json
+
+npm run voiceover:qwen3 -- `
+  --plan out/my-topic/tts-plan.json `
+  --public-dir work/my-topic/public `
+  --device cuda:0
 ```
 
-外部 adapter 完成音频后，将文件放入 `work/my-topic/public/audio/`，继续执行下面的 manifest 和导出步骤。
+执行器会验证每个 request hash、全局 profile、一致的固定 generation 参数和 public-relative WAV 输出路径；使用官方 `generate_custom_voice` 写出 24 kHz、单声道、PCM 16-bit WAV。随后继续执行下面的 manifest 和导出步骤。
 
 ### 3.5 生成 manifest、校验并导出
 
@@ -311,14 +342,18 @@ out/my-topic/
 ]
 ```
 
-没有字幕时仍可生成视频；设置 `"showCaptions": false` 可以关闭字幕显示。
+没有字幕时仍可生成视频；设置 `"showCaptions": false` 可以关闭字幕显示。每条字幕必须满足 `endMs > startMs`，不能相互重叠；有音频时不能超过音频时长，无音频时不能超过该页的 `minDurationSec`。
 
 ## 常用命令
 
 | 命令 | 用途 |
 | --- | --- |
 | `npm run dev` | Remotion Studio 预览（可传 `--presentation` 预览自己的主题） |
-| `npm run voiceover` | 按 profile 生成旁白 |
+| `npm run voiceover` | 原有 Windows SAPI / 兼容 TTS 生成入口 |
+| `npm run install:edge-tts` | 安装固定版本的隔离 Edge TTS runtime |
+| `npm run voiceover:edge` | 在线 Edge TTS 合成并转为 24 kHz 单声道 WAV |
+| `npm run install:qwen3-tts` | 安装固定版本的隔离 Qwen3-TTS CUDA runtime |
+| `npm run voiceover:qwen3` | 执行带 hash 的 Qwen3-TTS 请求计划 |
 | `npm run manifest` | 读取音频并生成 manifest |
 | `npm run check` | 校验主题和音频 |
 | `npm run export:pptx` | 导出演示稿 |

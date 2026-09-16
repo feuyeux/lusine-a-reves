@@ -25,4 +25,4 @@ Name Node tests `*.test.mjs` and Python tests `test_*.py`. Add coverage for sche
 
 ## Commits and Pull Requests
 
-There is no existing Git history, so use Conventional Commit prefixes such as `feat:`, `fix:`, `test:`, `docs:`, and `chore:`. PRs should describe the input and generated outputs, link relevant issues, list verification commands, and include screenshots or a media preview for visual changes. Update `package-lock.json` or `uv.lock` when dependencies change.
+Use Conventional Commit prefixes such as `feat:`, `fix:`, `test:`, `docs:`, and `chore:`. PRs should describe the input and generated outputs, link relevant issues, list verification commands, and include screenshots or a media preview for visual changes. Update `package-lock.json` or `uv.lock` when dependencies change.

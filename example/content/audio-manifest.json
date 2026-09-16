@@ -1,0 +1,65 @@
+{
+  "audio/opening.wav": {
+    "path": "audio/opening.wav",
+    "durationSec": 18.72,
+    "sampleRate": 24000,
+    "channels": 1,
+    "maxDb": -3,
+    "meanDb": -24,
+    "sha256": "77e0e06917c347e2e2009b881c2ffb4bb35c4f08c450e01f93166f3f7dd61f8f"
+  },
+  "audio/content-model.wav": {
+    "path": "audio/content-model.wav",
+    "durationSec": 16.72,
+    "sampleRate": 24000,
+    "channels": 1,
+    "maxDb": -3,
+    "meanDb": -24.3,
+    "sha256": "e104a2aaf51f9674a062837dcdec4de310ad4687c2ee631c96a13887ee790000"
+  },
+  "audio/pipeline.wav": {
+    "path": "audio/pipeline.wav",
+    "durationSec": 16.88,
+    "sampleRate": 24000,
+    "channels": 1,
+    "maxDb": -3,
+    "meanDb": -23.1,
+    "sha256": "ea76690a51c5ae5888dc5e91c70e335eb8b20a110ef9ddf714a1647086396788"
+  },
+  "audio/timeline.wav": {
+    "path": "audio/timeline.wav",
+    "durationSec": 16.12,
+    "sampleRate": 24000,
+    "channels": 1,
+    "maxDb": -3,
+    "meanDb": -23.2,
+    "sha256": "afd82af8b763861e9e0d714342707de874463e33e4b440ee60eaa5b3a782dea4"
+  },
+  "audio/render-adapter.wav": {
+    "path": "audio/render-adapter.wav",
+    "durationSec": 11.76,
+    "sampleRate": 24000,
+    "channels": 1,
+    "maxDb": -3,
+    "meanDb": -22.8,
+    "sha256": "020c275afc0cf525c6efb184acf07450eca505af73a77d67e238bd402b57917e"
+  },
+  "audio/outputs.wav": {
+    "path": "audio/outputs.wav",
+    "durationSec": 14.24,
+    "sampleRate": 24000,
+    "channels": 1,
+    "maxDb": -3,
+    "meanDb": -23.7,
+    "sha256": "4fd3bc1d619f313932912637feaf5c4d56924880ab466da0e763b9b03d00a737"
+  },
+  "audio/closing.wav": {
+    "path": "audio/closing.wav",
+    "durationSec": 15.92,
+    "sampleRate": 24000,
+    "channels": 1,
+    "maxDb": -3,
+    "meanDb": -23.9,
+    "sha256": "656afca49d99b3a129f999e728dc4d914fc54168c828ba5e8b3306262e294669"
+  }
+}
