@@ -15,7 +15,7 @@
   "volumeAdjustment": "+0%",
   "sampleRate": 24000,
   "channels": 1,
-  "format": "mp3",
+  "format": "wav",
   "normalize": false,
   "randomize": false
 }

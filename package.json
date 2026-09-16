@@ -4,11 +4,18 @@
   "private": true,
   "description": "A generic presentation-to-PPTX and narrated Remotion video builder",
   "type": "module",
+  "engines": {
+    "node": ">=22.18.0"
+  },
   "scripts": {
     "dev": "node core/scripts/studio.mjs",
     "check": "node core/scripts/validate-deck.mjs",
     "manifest": "node core/scripts/build-audio-manifest.mjs",
     "voiceover": "node core/scripts/generate-voiceover.mjs",
+    "install:edge-tts": "bash core/scripts/install-edge-tts.sh",
+    "install:qwen3-tts": "bash core/scripts/install-qwen3-tts.sh",
+    "voiceover:edge": "node core/scripts/run-edge-tts.mjs",
+    "voiceover:qwen3": "node core/scripts/run-qwen3-tts.mjs",
     "test": "node --test core/test/*.test.mjs",
     "export:pptx": "node core/scripts/export-pptx.mjs",
     "render": "node core/scripts/render.mjs",

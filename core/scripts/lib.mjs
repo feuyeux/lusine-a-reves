@@ -18,6 +18,11 @@ export const KNOWN_FLAGS = Object.freeze({
   outputDir: "alias of --output-dir",
   profile: "TTS profile path",
   brief: "confirmed topic brief path",
+  plan: "deterministic Qwen3-TTS request plan path",
+  "runtime-dir": "isolated TTS runtime directory",
+  "edge-tts-python": "Edge TTS runtime Python executable",
+  "qwen-python": "Qwen3-TTS runtime Python executable",
+  device: "Qwen3-TTS device (for example cuda:0)",
   force: "regenerate existing voiceover files",
   help: "show usage and exit",
 });

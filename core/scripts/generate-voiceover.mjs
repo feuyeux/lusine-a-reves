@@ -12,11 +12,21 @@ const { presentation } = loadDeckFiles(args);
 const profilePath = resolveFromRoot(args.profile, "core/profiles/tts-profile.json");
 const profile = readJson(profilePath);
 const provider = profile.provider;
+const fail = (message) => {
+  console.error(`Voiceover generation failed: ${message}`);
+  process.exit(2);
+};
 if (!['edge-tts', 'windows-sapi', 'cosyvoice2'].includes(provider)) {
-  throw new Error(
+  fail(
     `The local voiceover command does not support provider '${provider}'. `
     + "Use a dedicated adapter rather than silently falling back to a different voice.",
   );
+}
+if (provider === "edge-tts") {
+  fail("Use npm run voiceover:edge so Edge MP3 output is normalized to 24 kHz mono WAV.");
+}
+if (provider === "windows-sapi" && process.platform !== "win32") {
+  fail("The windows-sapi profile requires Windows. Select an edge-tts or cosyvoice2 profile on this platform.");
 }
 
 const voice = profile.voice;
@@ -48,9 +58,10 @@ function runCosyVoiceBatch(requests, requestFile) {
   let commandArgs;
   if (process.platform === "win32") {
     command = "wsl.exe";
-    const wslPython = process.env.COSYVOICE_PYTHON_WSL
-      || profile.wslPython
-      || "/mnt/d/zoo/cosyvoice/.venv/bin/python";
+    const wslPython = process.env.COSYVOICE_PYTHON_WSL || profile.wslPython;
+    if (!wslPython) {
+      throw new Error("CosyVoice2 on Windows requires COSYVOICE_PYTHON_WSL or profile.wslPython");
+    }
     commandArgs = [
       "-d", profile.wslDistro || "Ubuntu",
       "--",
